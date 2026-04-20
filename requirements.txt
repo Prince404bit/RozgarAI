@@ -1,0 +1,10 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+google-generativeai==0.7.2
+twilio==9.2.3
+python-dotenv==1.0.1
+requests==2.32.3
+langdetect==1.0.9
+SQLAlchemy==2.0.31
+Werkzeug==3.0.3
+gunicorn==22.0.0

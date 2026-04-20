@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}Application Confirmed — KaamMitr{% endblock %}
+{% block head %}
+<style>
+* { box-sizing: border-box; }
+body { background: #f5f5f5; }
+.success-banner {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  padding: 48px 20px 36px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.success-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,.08) 0%, transparent 60%),
+              radial-gradient(circle at 70% 20%, rgba(255,255,255,.06) 0%, transparent 50%);
+}
+.checkmark-wrap { position: relative; display: inline-block; margin-bottom: 20px; }
+.checkmark-circle {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: 3px solid rgba(255,255,255,.4);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto;
+  animation: circle-pop .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+.checkmark-circle svg { width: 44px; height: 44px; animation: draw-check .4s ease .3s both; }
+.checkmark-circle svg path {
+  stroke: #fff; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round;
+  fill: none; stroke-dasharray: 60; stroke-dashoffset: 60;
+  animation: dash .4s ease .35s forwards;
+}
+@keyframes circle-pop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+@keyframes dash { to { stroke-dashoffset: 0; } }
+.pulse-ring {
+  position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35);
+  animation: pulse-out 1.2s ease .6s infinite;
+}
+@keyframes pulse-out { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(1.5);opacity:0} }
+.banner-title {
+  color: #fff; font-size: 1.55rem; font-weight: 800;
+  font-family: var(--font-display); margin-bottom: 6px;
+  animation: slide-up .4s ease .2s both;
+}
+.banner-sub { color: rgba(255,255,255,.85); font-size: .88rem; animation: slide-up .4s ease .3s both; }
+@keyframes slide-up { from{transform:translateY(14px);opacity:0} to{transform:translateY(0);opacity:1} }
+.app-id-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.18); border: 1.5px solid rgba(255,255,255,.35);
+  border-radius: 100px; padding: 8px 20px; margin-top: 16px;
+  color: #fff; font-size: .82rem; font-weight: 700; letter-spacing: .06em;
+  animation: slide-up .4s ease .4s both;
+}
+.confetti-dot {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(120px) rotate(360deg);opacity:0}
+}
+.confirm-body { max-width: 520px; margin: 0 auto; padding: 0 16px 40px; }
+.info-card {
+  background: #fff; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  margin-top: 16px; overflow: hidden; animation: slide-up .4s ease .5s both;
+}
+.info-card-header {
+  padding: 14px 18px; border-bottom: 1px solid #f0f0f0;
+  font-weight: 700; font-size: .88rem; color: #333;
+  display: flex; align-items: center; gap: 8px;
+}
+.info-card-body { padding: 16px 18px; }
+.detail-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: .88rem;
+}
+.detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+.detail-icon { font-size: 1rem; width: 22px; flex-shrink: 0; margin-top: 1px; }
+.detail-label { color: #888; font-size: .75rem; margin-bottom: 2px; }
+.detail-val   { color: #222; font-weight: 600; }
+.track-steps { padding: 4px 0; }
+.track-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 10px 0; position: relative;
+}
+.track-step:not(:last-child)::after {
+  content: ''; position: absolute; left: 11px; top: 32px;
+  width: 2px; height: calc(100% - 8px); background: #e5e7eb;
+}
+.track-step.done::after { background: #16a34a; }
+.track-dot {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; margin-top: 1px;
+  background: #e5e7eb; color: #999; transition: all .3s;
+}
+.track-step.done   .track-dot { background: #16a34a; color: #fff; }
+.track-step.active .track-dot {
+  background: var(--clay); color: #fff;
+  box-shadow: 0 0 0 4px rgba(193,68,14,.15);
+  animation: dot-pulse 1.5s ease infinite;
+}
+@keyframes dot-pulse {
+  0%,100%{box-shadow:0 0 0 4px rgba(193,68,14,.15)}
+  50%{box-shadow:0 0 0 8px rgba(193,68,14,.05)}
+}
+.track-info { flex: 1; }
+.track-title { font-size: .88rem; font-weight: 700; color: #222; }
+.track-sub   { font-size: .75rem; color: #888; margin-top: 2px; }
+.track-step.active  .track-title { color: var(--clay); }
+.track-step.pending .track-title { color: #aaa; }
+.track-step.pending .track-dot   { background: #f0f0f0; }
+.ans-item { padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: .85rem; }
+.ans-item:last-child { border-bottom: none; padding-bottom: 0; }
+.ans-q { color: #888; font-size: .75rem; margin-bottom: 3px; }
+.ans-a { color: #222; font-weight: 600; }
+.ans-a::before { content: '→ '; color: #16a34a; }
+.action-row {
+  display: flex; gap: 12px; margin-top: 20px;
+  animation: slide-up .4s ease .7s both;
+}
+.action-row .btn { flex: 1; padding: 14px; font-size: .9rem; border-radius: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-banner" id="success-banner">
+  <div class="checkmark-wrap">
+    <div class="checkmark-circle">
+      <svg viewBox="0 0 44 44"><path d="M10 22 L19 31 L34 14"/></svg>
+    </div>
+    <div class="pulse-ring"></div>
+  </div>
+  <div class="banner-title" id="banner-title">Application Ho Gayi! 🎉</div>
+  <div class="banner-sub"   id="banner-sub">Employer jald hi aapko contact karega</div>
+  <div class="app-id-pill"  id="app-id-pill" style="display:none">
+    🆔 <span id="app-id-val">KM-XXXX</span>
+  </div>
+</div>
+
+<div class="confirm-body">
+
+  <!-- Job Details -->
+  <div class="info-card" id="job-card" style="display:none">
+    <div class="info-card-header" id="lbl-job-details">📋 Job Details</div>
+    <div class="info-card-body">
+      <div class="detail-row">
+        <span class="detail-icon">💼</span>
+        <div><div class="detail-label" id="lbl-job-title">Job Title</div><div class="detail-val" id="c-title">—</div></div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-icon">💰</span>
+        <div><div class="detail-label" id="lbl-salary">Salary</div><div class="detail-val" id="c-salary">—</div></div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-icon">📍</span>
+        <div><div class="detail-label" id="lbl-location">Location</div><div class="detail-val" id="c-location">—</div></div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-icon">⏱</span>
+        <div><div class="detail-label" id="lbl-duration">Duration</div><div class="detail-val" id="c-duration">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tracking -->
+  <div class="info-card">
+    <div class="info-card-header">
+      📦 <span id="lbl-app-status">Application Status</span>
+      <span id="track-refresh" style="margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:400">Live</span>
+    </div>
+    <div class="info-card-body">
+      <div class="track-steps" id="track-steps">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem" id="loading-status-txt">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answers -->
+  <div class="info-card" id="answers-card" style="display:none">
+    <div class="info-card-header" id="lbl-your-answers">✍️ Aapke Jawab</div>
+    <div class="info-card-body" id="answers-list"></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <a href="/jobs" class="btn btn-outline" id="btn-more-jobs">🔎 Aur Jobs</a>
+    <a href="/profile" class="btn btn-primary" id="profile-link">📊 Track Karein</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const _cl = KM.getLang() || 'hi';
+const CONF_L = {
+  hi: {
+    bannerTitle: 'Application Ho Gayi! 🎉',
+    bannerSub:   'Employer jald hi aapko contact karega',
+    jobDetails:  '📋 Job Details',
+    jobTitle: 'Job Title', salary: 'Salary', location: 'Location', duration: 'Duration',
+    appStatus: 'Application Status',
+    yourAnswers: '✍️ Aapke Jawab',
+    moreJobs: '🔎 Aur Jobs', trackBtn: '📊 Track Karein',
+    rejected: '✕ Application Reject Ho Gayi',
+    steps: [
+      { title: 'Application Submit Hui',   sub: 'Aapki application employer ko mili' },
+      { title: 'Employer Ne Accept Kiya',  sub: 'Aapko select kiya — call expect karo' },
+      { title: 'Kaam Shuru Ho Gaya',       sub: 'Aap abhi kaam kar rahe hain' },
+      { title: 'Kaam Khatam — Badhai Ho!', sub: 'Job successfully complete hui' },
+    ]
+  },
+  en: {
+    bannerTitle: 'Application Submitted! 🎉',
+    bannerSub:   'Employer will contact you soon',
+    jobDetails:  '📋 Job Details',
+    jobTitle: 'Job Title', salary: 'Salary', location: 'Location', duration: 'Duration',
+    appStatus: 'Application Status',
+    yourAnswers: '✍️ Your Answers',
+    moreJobs: '🔎 More Jobs', trackBtn: '📊 Track Application',
+    rejected: '✕ Application Rejected',
+    steps: [
+      { title: 'Application Submitted',  sub: 'Your application reached the employer' },
+      { title: 'Employer Accepted',      sub: 'You were selected — expect a call' },
+      { title: 'Work Started',           sub: 'You are currently working' },
+      { title: 'Work Completed!',        sub: 'Job successfully completed' },
+    ]
+  },
+  te: {
+    bannerTitle: 'దరఖాస్తు జమ అయింది! 🎉',
+    bannerSub:   'యజమాని త్వరలో సంప్రదిస్తారు',
+    jobDetails:  '📋 ఉద్యోగ వివరాలు',
+    jobTitle: 'ఉద్యోగ శీర్షిక', salary: 'జీతం', location: 'స్థానం', duration: 'వ్యవధి',
+    appStatus: 'దరఖాస్తు స్థితి',
+    yourAnswers: '✍️ మీ సమాధానాలు',
+    moreJobs: '🔎 ఇంకా ఉద్యోగాలు', trackBtn: '📊 ట్రాక్ చేయండి',
+    rejected: '✕ దరఖాస్తు తిరస్కరించబడింది',
+    steps: [
+      { title: 'దరఖాస్తు సమర్పించబడింది',  sub: 'మీ దరఖాస్తు యజమానికి చేరింది' },
+      { title: 'యజమాని అంగీకరించారు',       sub: 'మీరు ఎంపికైరు — కాల్ రావచ్చు' },
+      { title: 'పని ప్రారంభమైంది',          sub: 'మీరు ఇప్పుడు పని చేస్తున్నారు' },
+      { title: 'పని పూర్తైంది!',            sub: 'ఉద్యోగం విజయవంతంగా పూర్తైంది' },
+    ]
+  }
+};
+const CL = CONF_L[_cl] || CONF_L.en;
+
+// Apply all static labels
+document.getElementById('banner-title').textContent       = CL.bannerTitle;
+document.getElementById('banner-sub').textContent         = CL.bannerSub;
+document.getElementById('lbl-job-details').textContent    = CL.jobDetails;
+document.getElementById('lbl-job-title').textContent      = CL.jobTitle;
+document.getElementById('lbl-salary').textContent         = CL.salary;
+document.getElementById('lbl-location').textContent       = CL.location;
+document.getElementById('lbl-duration').textContent       = CL.duration;
+document.getElementById('lbl-app-status').textContent     = CL.appStatus;
+document.getElementById('loading-status-txt').textContent = CL.appStatus + '...';
+document.getElementById('lbl-your-answers').textContent   = CL.yourAnswers;
+document.getElementById('btn-more-jobs').textContent      = CL.moreJobs;
+document.getElementById('profile-link').textContent       = CL.trackBtn;
+
+// Confetti
+function spawnConfetti() {
+  const colors = ['#f59e0b','#ef4444','#3b82f6','#22c55e','#a855f7','#ec4899'];
+  const banner = document.getElementById('success-banner');
+  for (let i = 0; i < 28; i++) {
+    const d = document.createElement('div');
+    d.className = 'confetti-dot';
+    const size = 6 + Math.random() * 8;
+    d.style.cssText = `width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}%;top:${Math.random()*60}%;animation-duration:${.8+Math.random()*.8}s;animation-delay:${Math.random()*.4}s;`;
+    banner.appendChild(d);
+    setTimeout(() => d.remove(), 1600);
+  }
+}
+setTimeout(spawnConfetti, 400);
+
+const STATUS_ORDER = { applied:0, accepted:1, in_progress:2, completed:3 };
+let _whId = null;
+let _pollTimer = null;
+
+function renderTracker(status, appliedTime) {
+  const el = document.getElementById('track-steps');
+  if (!el) return;
+  if (status === 'rejected') {
+    el.innerHTML = `<div style="padding:16px;color:#DC2626;font-weight:700;text-align:center">${CL.rejected}</div>`;
+    return;
+  }
+  const curIdx = STATUS_ORDER[status] ?? 0;
+  el.innerHTML = CL.steps.map((step, i) => {
+    const done   = i < curIdx;
+    const active = i === curIdx;
+    const cls    = done ? 'done' : active ? 'active' : 'pending';
+    const dotTxt = done ? '✓' : active ? '●' : (i + 1);
+    const subTxt = (i === 0 && appliedTime) ? appliedTime : step.sub;
+    return `<div class="track-step ${cls}">
+      <div class="track-dot">${dotTxt}</div>
+      <div class="track-info">
+        <div class="track-title">${step.title}</div>
+        <div class="track-sub">${subTxt}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const ref = document.getElementById('track-refresh');
+  if (ref) ref.textContent = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+}
+
+async function pollStatus() {
+  if (!_whId) return;
+  const phone = KM.getPhone();
+  if (!phone) return;
+  const r = await KM.api('GET', `/api/user/applications?phone=${encodeURIComponent(phone)}`);
+  if (r.success && Array.isArray(r.data)) {
+    const app = r.data.find(a => a.id === _whId || a.wh_id === _whId);
+    if (app) renderTracker(app.status);
+  }
+}
+
+(function () {
+  const raw   = sessionStorage.getItem('km_confirm');
+  const phone = KM.getPhone();
+
+  const now = new Date();
+  const appliedTime = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) +
+    ', ' + now.toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+  renderTracker('applied', appliedTime);
+
+  if (!raw) {
+    if (phone) document.getElementById('profile-link').href = `/profile?phone=${encodeURIComponent(phone)}`;
+    return;
+  }
+
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { return; }
+  sessionStorage.removeItem('km_confirm');
+
+  const job     = data.job     || {};
+  const answers = data.answers || [];
+  const appId   = data.application_id;
+
+  if (typeof appId === 'number') _whId = appId;
+
+  if (appId) {
+    const idStr = typeof appId === 'number' ? `KM-${String(appId).padStart(4,'0')}` : String(appId);
+    document.getElementById('app-id-val').textContent = idStr;
+    document.getElementById('app-id-pill').style.display = '';
+  }
+
+  if (job.title) {
+    document.getElementById('c-title').textContent    = job.title;
+    document.getElementById('c-salary').textContent   = `₹${Math.round(job.salary)} / ${job.unit}`;
+    document.getElementById('c-location').textContent = job.location;
+    document.getElementById('c-duration').textContent = job.duration;
+    document.getElementById('job-card').style.display = '';
+  }
+
+  if (answers.length) {
+    document.getElementById('answers-list').innerHTML = answers.map(a =>
+      `<div class="ans-item"><div class="ans-q">${KM.esc(a.question)}</div><div class="ans-a">${KM.esc(a.answer)}</div></div>`
+    ).join('');
+    document.getElementById('answers-card').style.display = '';
+  }
+
+  if (phone) document.getElementById('profile-link').href = `/profile?phone=${encodeURIComponent(phone)}`;
+
+  if (_whId) {
+    _pollTimer = setInterval(pollStatus, 8000);
+    setTimeout(() => clearInterval(_pollTimer), 300000);
+  }
+})();
+</script>
+{% endblock %}

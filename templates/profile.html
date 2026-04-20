@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — My Profile{% endblock %}
+{% block head %}
+<style>
+.profile-wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 60px; }
+
+.prof-hero {
+  background: linear-gradient(130deg, var(--soil) 0%, #3D2512 100%);
+  border-radius: var(--r-xl); padding: 32px 28px;
+  color: var(--sand); display: flex; gap: 24px; align-items: center;
+  box-shadow: var(--shadow-lg); margin-bottom: 24px;
+  position: relative; overflow: hidden;
+}
+.prof-hero::before {
+  content: ''; position: absolute; width: 250px; height: 250px; border-radius: 50%;
+  background: rgba(245,166,35,.06); top: -80px; right: -60px; pointer-events: none;
+}
+.prof-hero-info { flex: 1; }
+.prof-name  { font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: var(--sand); }
+.prof-phone { font-size: .82rem; opacity: .65; margin-top: 3px; }
+.prof-skill-pill {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  background: rgba(255,255,255,.12); padding: 6px 14px; border-radius: 100px;
+  font-size: .78rem; font-weight: 600;
+}
+
+/* ── Button group — always visible ── */
+.prof-btn-group {
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end; flex-shrink: 0;
+}
+.prof-btn {
+  padding: 10px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12); color: var(--sand);
+  font-family: var(--font-body); font-size: .82rem; font-weight: 700;
+  cursor: pointer; transition: background .15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.prof-btn:hover { background: rgba(255,255,255,.22); }
+.prof-btn.logout {
+  background: rgba(220,38,38,.2);
+  border-color: rgba(220,38,38,.5);
+  color: #FCA5A5;
+}
+.prof-btn.logout:hover { background: rgba(220,38,38,.35); }
+
+.stat-row {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px;
+}
+.stat-box {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm); padding: 20px 16px; text-align: center;
+  border: 1px solid var(--border);
+  transition: box-shadow .2s, transform .2s var(--ease-out);
+}
+.stat-box:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.stat-box-val { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--clay); }
+.stat-box-lbl { font-size: .71rem; color: var(--muted); margin-top: 3px; font-weight: 500; }
+
+.section-hdr {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  margin: 28px 0 14px; display: flex; align-items: center; gap: 8px;
+}
+.section-hdr::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.app-list { display: flex; flex-direction: column; gap: 14px; }
+.app-card {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  overflow: hidden; transition: box-shadow .2s;
+}
+.app-card:hover { box-shadow: var(--shadow-md); }
+
+/* Status bar at top of each card */
+.app-status-bar {
+  height: 4px; width: 100%;
+}
+.sb-applied     { background: #93C5FD; }
+.sb-accepted    { background: #6EE7B7; }
+.sb-in_progress { background: #FCD34D; }
+.sb-completed   { background: #34D399; }
+.sb-rejected    { background: #FCA5A5; }
+.sb-cancelled   { background: #D1D5DB; }
+
+.app-card-body {
+  padding: 16px 18px;
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.app-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+.app-info { flex: 1; min-width: 0; }
+.app-title { font-weight: 700; font-size: .9rem; }
+.app-meta  { font-size: .73rem; color: var(--muted); margin-top: 3px;
+             display: flex; gap: 10px; flex-wrap: wrap; }
+.app-id    { font-size: .68rem; color: var(--muted); margin-top: 4px;
+             font-family: monospace; letter-spacing: .3px; }
+
+/* Status pill */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 100px;
+  font-size: .72rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+.sp-applied     { background: #DBEAFE; color: #1E40AF; }
+.sp-accepted    { background: #D1FAE5; color: #065F46; }
+.sp-in_progress { background: #FEF3C7; color: #92400E; }
+.sp-completed   { background: #ECFDF5; color: #065F46; }
+.sp-rejected    { background: #FEE2E2; color: #991B1B; }
+.sp-cancelled   { background: #F3F4F6; color: #6B7280; }
+
+/* Timeline inside card */
+.app-timeline {
+  padding: 0 18px 14px;
+  display: flex; gap: 0;
+}
+.tl-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.tl-step::before {
+  content: ''; position: absolute;
+  top: 10px; left: 50%; right: -50%;
+  height: 2px; background: var(--border); z-index: 0;
+}
+.tl-step:last-child::before { display: none; }
+.tl-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; z-index: 1; position: relative;
+  transition: all .3s;
+}
+.tl-dot.done  { background: var(--forest); border-color: var(--forest); color: #fff; }
+.tl-dot.active{ background: var(--saffron); border-color: var(--saffron); color: var(--soil); }
+.tl-dot.fail  { background: #DC2626; border-color: #DC2626; color: #fff; }
+.tl-label {
+  font-size: .6rem; color: var(--muted); margin-top: 4px;
+  text-align: center; line-height: 1.2;
+}
+
+.skill-card {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm); padding: 22px; border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 20px;
+}
+.skill-details { flex: 1; }
+.skill-name      { font-family: var(--font-display); font-size: 1rem; font-weight: 700; }
+.skill-level-txt { font-size: .78rem; color: var(--muted); margin: 4px 0 10px; }
+
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.action-btn {
+  background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r-lg);
+  padding: 18px; cursor: pointer; text-align: left;
+  transition: all .15s var(--ease-back); display: flex; align-items: center; gap: 12px;
+}
+.action-btn:hover { border-color: var(--clay); background: var(--clay-pale); transform: scale(1.02); }
+.action-btn .a-icon  { font-size: 1.4rem; }
+.action-btn .a-title { font-weight: 700; font-size: .85rem; }
+.action-btn .a-desc  { font-size: .72rem; color: var(--muted); }
+
+.empty-hist { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-hist .ei { font-size: 2.8rem; margin-bottom: 12px; }
+
+/* Resume modal */
+.resume-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(44,26,14,.6); z-index: 900;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.resume-modal {
+  background: var(--white); border-radius: 24px;
+  width: 100%; max-width: 560px; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 24px 64px rgba(44,26,14,.3);
+  animation: modal-slide .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes modal-slide {
+  from { opacity:0; transform:translateY(30px) scale(.96); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.resume-header {
+  background: linear-gradient(135deg, var(--soil), #3D2512);
+  padding: 28px 28px 20px; border-radius: 24px 24px 0 0;
+  color: var(--sand);
+}
+.resume-name { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; }
+.resume-meta { font-size: .82rem; opacity: .7; margin-top: 4px; }
+.resume-grade {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--saffron); color: var(--soil);
+  font-family: var(--font-display); font-size: 1.2rem; font-weight: 900;
+  flex-shrink: 0;
+}
+.resume-body { padding: 24px 28px; }
+.r-section { margin-bottom: 20px; }
+.r-section-title {
+  font-size: .72rem; font-weight: 700; color: var(--clay);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.r-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.r-text { font-size: .88rem; color: var(--soil); line-height: 1.6; }
+.r-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.r-tag {
+  padding: 5px 14px; border-radius: 100px;
+  background: var(--clay-pale); color: var(--clay);
+  font-size: .78rem; font-weight: 600;
+}
+.r-tag.green { background: var(--forest-pale); color: var(--forest); }
+.r-tag.gold  { background: var(--saffron-pale); color: #92400E; }
+.resume-actions {
+  display: flex; gap: 10px; padding: 0 28px 24px;
+}
+.resume-actions .btn { flex: 1; }
+
+/* Print styles */
+@media print {
+  .resume-overlay { position: static; background: none; padding: 0; }
+  .resume-modal { box-shadow: none; max-height: none; border-radius: 0; }
+  .resume-actions, .prof-btn-group, .navbar, #km-toast { display: none !important; }
+}
+
+@media(max-width: 500px) {
+  .stat-row    { grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .action-grid { grid-template-columns: 1fr; }
+  .prof-hero   { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .prof-btn-group { flex-direction: row; align-items: center; width: 100%; }
+  .prof-btn { flex: 1; justify-content: center; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrap">
+
+  <!-- ── HERO — always in static HTML so buttons always render ── -->
+  <div class="prof-hero">
+    <div id="trust-ring-wrap">
+      <!-- filled by JS -->
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1);
+                  display:flex;align-items:center;justify-content:center;font-size:1.8rem;">👤</div>
+    </div>
+    <div class="prof-hero-info">
+      <div class="prof-name"  id="prof-name">Loading...</div>
+      <div class="prof-phone" id="prof-phone"></div>
+      <div id="prof-skill-wrap"></div>
+    </div>
+
+    <!-- Buttons — static HTML, always visible -->
+    <div class="prof-btn-group">
+      <button class="prof-btn" onclick="editProfile()">✏️ Edit</button>
+      <button class="prof-btn" onclick="viewResume()" style="background:rgba(245,166,35,.2);border-color:rgba(245,166,35,.5);color:#FEF3C7">📄 Resume</button>
+      <button class="prof-btn logout" onclick="doLogout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <!-- ── STATS ── -->
+  <div class="stat-row" id="stat-row">
+    <div class="stat-box">
+      <div class="stat-box-val" id="stat-earned">—</div>
+      <div class="stat-box-lbl" id="lbl-earned"></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val" id="stat-done">—</div>
+      <div class="stat-box-lbl" id="lbl-done"></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-val" id="stat-applied">—</div>
+      <div class="stat-box-lbl" id="lbl-applied"></div>
+    </div>
+  </div>
+
+  <!-- ── DYNAMIC CONTENT (skill + applications + actions) ── -->
+  <div id="prof-dynamic">
+    <!-- skeleton -->
+    <div class="skel" style="height:14px;width:40%;margin-bottom:20px"></div>
+    <div class="skel" style="height:80px;border-radius:16px;margin-bottom:28px"></div>
+    <div class="skel" style="height:14px;width:40%;margin-bottom:14px"></div>
+    <div class="skel" style="height:70px;border-radius:16px;margin-bottom:10px"></div>
+    <div class="skel" style="height:70px;border-radius:16px"></div>
+  </div>
+
+</div>
+
+<!-- ── RESUME MODAL ── -->
+<div class="resume-overlay" id="resume-overlay" onclick="if(event.target===this)closeResume()">
+  <div class="resume-modal">
+    <div class="resume-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div>
+          <div class="resume-name" id="r-name">Worker</div>
+          <div class="resume-meta" id="r-meta"></div>
+        </div>
+        <div class="resume-grade" id="r-grade">B</div>
+      </div>
+      <div style="display:flex;gap:20px;margin-top:18px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--saffron)" id="r-trust">50</div>
+          <div style="font-size:.68rem;opacity:.65" id="r-trust-lbl">Trust Score</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--saffron)" id="r-done">0</div>
+          <div style="font-size:.68rem;opacity:.65" id="r-done-lbl">Jobs Done</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--saffron)" id="r-rating">N/A</div>
+          <div style="font-size:.68rem;opacity:.65" id="r-rating-lbl">Avg Rating</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--saffron)" id="r-earn">₹0</div>
+          <div style="font-size:.68rem;opacity:.65" id="r-earn-lbl">Earned</div>
+        </div>
+      </div>
+    </div>
+    <div class="resume-body" id="resume-body"></div>
+    <div class="resume-actions">
+      <button class="btn btn-outline" onclick="closeResume()">
+        <span id="r-close-txt">Close</span>
+      </button>
+      <button class="btn btn-primary" onclick="printResume()">
+        <span id="r-print-txt">Print / Save PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PHONE = '{{ phone }}' || KM.getPhone();
+const _pl = KM.getLang() || 'hi';
+const PROF_L = {
+  hi: {
+    totalEarned:'कुल कमाई', jobsDone:'काम पूरे', applied:'आवेदन',
+    skillSection:'कौशल मूल्यांकन', improve:'सुधारें →',
+    appsSection:'नौकरी आवेदन', noApps:'अभी तक कोई आवेदन नहीं',
+    findJobs:'नौकरियाँ खोजें', actionsSection:'त्वरित कार्य',
+    aiChat:'AI Chat', aiChatDesc:'Kaam dhoondho',
+    browseJobs:'Jobs Dekhein', browseDesc:'Sab jobs dekho',
+    skillTest:'Skill Test', skillDesc:'Score badhao',
+    resetChat:'Reset Chat', resetDesc:'Fresh start',
+    editPrompt:'Apna naam dalein:',
+    editSuccess:'Profile update ho gaya!',
+    resetSuccess:'Chat reset ho gaya!',
+    logoutMsg:'Logout ho gaya!'
+  },
+  en: {
+    totalEarned:'Total Earned', jobsDone:'Jobs Completed', applied:'Applied',
+    skillSection:'Skill Assessment', improve:'Improve →',
+    appsSection:'Job Applications', noApps:'No applications yet',
+    findJobs:'Find Jobs', actionsSection:'Quick Actions',
+    aiChat:'AI Chat', aiChatDesc:'Find work',
+    browseJobs:'Browse Jobs', browseDesc:'See all jobs',
+    skillTest:'Skill Test', skillDesc:'Improve score',
+    resetChat:'Reset Chat', resetDesc:'Fresh start',
+    editPrompt:'Enter your name:',
+    editSuccess:'Profile updated!',
+    resetSuccess:'Chat reset!',
+    logoutMsg:'Logged out!'
+  },
+  te: {
+    totalEarned:'మొత్తం సంపాదన', jobsDone:'పూర్తయిన పనులు', applied:'దరఖాస్తులు',
+    skillSection:'నైపుణ్య మూల్యాంకనం', improve:'మెరుగుపరచండి →',
+    appsSection:'ఉద్యోగ దరఖాస్తులు', noApps:'ఇంకా దరఖాస్తులు లేవు',
+    findJobs:'ఉద్యోగాలు వెతకండి', actionsSection:'త్వరిత చర్యలు',
+    aiChat:'AI చాట్', aiChatDesc:'పని వెతకండి',
+    browseJobs:'ఉద్యోగాలు చూడండి', browseDesc:'అన్ని ఉద్యోగాలు',
+    skillTest:'నైపుణ్య పరీక్ష', skillDesc:'స్కోర్ పెంచుకోండి',
+    resetChat:'చాట్ రీసెట్', resetDesc:'కొత్తగా ప్రారంభించండి',
+    editPrompt:'మీ పేరు నమోదు చేయండి:',
+    editSuccess:'ప్రొఫైల్ అప్డేట్ అయింది!',
+    resetSuccess:'చాట్ రీసెట్ అయింది!',
+    logoutMsg:'లాగ్అవుట్ అయింది!'
+  }
+};
+const PL = PROF_L[_pl] || PROF_L.en;
+
+// Apply static labels immediately
+document.getElementById('lbl-earned').textContent  = PL.totalEarned;
+document.getElementById('lbl-done').textContent    = PL.jobsDone;
+document.getElementById('lbl-applied').textContent = PL.applied;
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (!PHONE) { window.location.href = '/'; return; }
+  KM.setPhone(PHONE);
+  loadProfile();
+});
+
+async function loadProfile() {
+  const [pr, ar] = await Promise.all([
+    KM.api('GET', `/api/user/profile?phone=${PHONE}`),
+    KM.api('GET', `/api/user/applications?phone=${PHONE}`)
+  ]);
+
+  if (!pr.success || !pr.data) {
+    document.getElementById('prof-name').textContent = 'Profile not found';
+    document.getElementById('prof-dynamic').innerHTML =
+      `<div class="empty-hist"><div class="ei">😕</div>
+       <p>Profile nahi mila. <a href="/">Home jaein</a></p></div>`;
+    return;
+  }
+
+  const u    = pr.data;
+  const apps = ar.success ? (ar.data || []) : [];
+  const done = apps.filter(a => a.status === 'completed').length;
+  const score = Math.round(u.skill_score || 0);
+
+  // ── Fill hero ──────────────────────────────────────────────────
+  document.getElementById('trust-ring-wrap').innerHTML = renderTrustRing(u.trust_score || 50, 80);
+  document.getElementById('prof-name').textContent  = u.name || 'Worker';
+  document.getElementById('prof-phone').textContent = '📞 +' + (u.phone || '');
+  if (u.skill) {
+    document.getElementById('prof-skill-wrap').innerHTML =
+      `<div class="prof-skill-pill">🛠 ${KM.cap(u.skill)} · ${KM.cap(u.skill_level || 'beginner')}</div>`;
+  }
+
+  // ── Fill stats ─────────────────────────────────────────────────
+  document.getElementById('stat-earned').textContent  = KM.currency(u.earnings || 0);
+  document.getElementById('stat-done').textContent    = done;
+  document.getElementById('stat-applied').textContent = apps.length;
+
+  // ── Fill dynamic section ───────────────────────────────────────
+  const skillHTML = u.skill ? `
+    <div class="section-hdr">🛠 ${PL.skillSection}</div>
+    <div class="skill-card fade-up">
+      <div class="skill-details">
+        <div class="skill-name">${KM.cap(u.skill)}</div>
+        <div class="skill-level-txt">Level: ${KM.cap(u.skill_level || 'beginner')}${score > 0 ? ` · Score: ${score}%` : ''}</div>
+        ${score > 0 ? `<div class="progress-bar"><div class="progress-fill" style="width:${score}%"></div></div>` : ''}
+      </div>
+      <a href="/chat?phone=${PHONE}" class="btn btn-outline btn-sm">${PL.improve}</a>
+    </div>` : '';
+
+  const appsHTML = apps.length === 0
+    ? `<div class="empty-hist">
+         <div class="ei">📭</div>
+         <p style="margin-bottom:16px">${PL.noApps}</p>
+         <a href="/jobs" class="btn btn-primary btn-sm">${PL.findJobs}</a>
+       </div>`
+    : `<div class="app-list">
+        ${apps.map(a => {
+          const tlStepsMap = {
+            hi: [
+              { key: 'applied',     label: 'Applied',    icon: '📝' },
+              { key: 'accepted',    label: 'Accept',     icon: '✅' },
+              { key: 'in_progress', label: 'Kaam Shuru', icon: '🚀' },
+              { key: 'completed',   label: 'Khatam',     icon: '🎉' },
+            ],
+            en: [
+              { key: 'applied',     label: 'Applied',    icon: '📝' },
+              { key: 'accepted',    label: 'Accepted',   icon: '✅' },
+              { key: 'in_progress', label: 'In Progress',icon: '🚀' },
+              { key: 'completed',   label: 'Completed',  icon: '🎉' },
+            ],
+            te: [
+              { key: 'applied',     label: 'దరఖాస్తు',  icon: '📝' },
+              { key: 'accepted',    label: 'అంగీకారం', icon: '✅' },
+              { key: 'in_progress', label: 'పని జరుగుతోంది', icon: '🚀' },
+              { key: 'completed',   label: 'పూర్తైంది', icon: '🎉' },
+            ]
+          };
+          const steps = tlStepsMap[_pl] || tlStepsMap.en;
+          const ORDER = { applied:0, accepted:1, in_progress:2, completed:3, rejected:-1 };
+          const curIdx = ORDER[a.status] ?? 0;
+          const isRejected = a.status === 'rejected';
+
+          const rejectedTxt = { hi: '✕ Application Reject Ho Gayi', en: '✕ Application Rejected', te: '✕ దరఖాస్తు తిరస్కరించబడింది' };
+          const timelineHTML = isRejected
+            ? `<div style="padding:8px 18px 14px;font-size:.75rem;color:#DC2626;font-weight:600">${rejectedTxt[_pl] || rejectedTxt.en}</div>`
+            : `<div class="app-timeline">
+                ${steps.map((step, i) => {
+                  const done   = i < curIdx;
+                  const active = i === curIdx;
+                  const cls    = done ? 'done' : active ? 'active' : '';
+                  return `<div class="tl-step">
+                    <div class="tl-dot ${cls}">${done ? '✓' : active ? step.icon : i+1}</div>
+                    <div class="tl-label" style="color:${active ? 'var(--clay)' : done ? 'var(--forest)' : 'var(--muted)'}">${step.label}</div>
+                  </div>`;
+                }).join('')}
+              </div>`;
+
+          const statusColors = {
+            applied:'#DBEAFE,#1E40AF', accepted:'#D1FAE5,#065F46',
+            in_progress:'#FEF3C7,#92400E', completed:'#ECFDF5,#065F46', rejected:'#FEE2E2,#991B1B'
+          };
+          const [sbg, sfg] = (statusColors[a.status] || '#F3F4F6,#6B7280').split(',');
+
+          return `
+          <div class="app-card fade-up">
+            <div class="app-status-bar sb-${a.status || 'applied'}"></div>
+            <div class="app-card-body">
+              <div class="app-icon" style="background:${a.job_type === 'skilled' ? 'var(--forest-pale)' : 'var(--clay-pale)'}">
+                ${a.job_type === 'skilled' ? '🧠' : '⚡'}
+              </div>
+              <div class="app-info">
+                <div class="app-title">${KM.esc(a.job_title || 'Job')}</div>
+                <div class="app-meta">
+                  ${KM.currency(a.job_salary || 0)}/${a.job_salary_unit || 'day'}
+                  ${a.job_location ? ` &nbsp;·&nbsp; 📍${KM.esc(a.job_location)}` : ''}
+                  ${a.rating > 0 ? ` &nbsp;·&nbsp; ⭐${a.rating}` : ''}
+                </div>
+                ${a.application_id ? `<div class="app-id">🆔 ${KM.esc(a.application_id)}</div>` : ''}
+              </div>
+              <span class="status-pill sp-${a.status || 'applied'}">${KM.cap((a.status||'applied').replace('_',' '))}</span>
+            </div>
+            ${timelineHTML}
+          </div>`;
+        }).join('')}
+       </div>`;
+
+  document.getElementById('prof-dynamic').innerHTML = `
+    ${skillHTML}
+    <div class="section-hdr">📋 ${PL.appsSection}</div>
+    ${appsHTML}
+    <div class="section-hdr">⚡ ${PL.actionsSection}</div>
+    <div class="action-grid fade-up">
+      <button class="action-btn" onclick="window.location.href='/chat?phone=${PHONE}'">
+        <span class="a-icon">💬</span>
+        <div><div class="a-title">${PL.aiChat}</div><div class="a-desc">${PL.aiChatDesc}</div></div>
+      </button>
+      <button class="action-btn" onclick="window.location.href='/jobs'">
+        <span class="a-icon">🔎</span>
+        <div><div class="a-title">${PL.browseJobs}</div><div class="a-desc">${PL.browseDesc}</div></div>
+      </button>
+      <button class="action-btn" onclick="window.location.href='/chat?phone=${PHONE}&mode=skilled'">
+        <span class="a-icon">🧠</span>
+        <div><div class="a-title">${PL.skillTest}</div><div class="a-desc">${PL.skillDesc}</div></div>
+      </button>
+      <button class="action-btn" onclick="resetConv()">
+        <span class="a-icon">🔄</span>
+        <div><div class="a-title">${PL.resetChat}</div><div class="a-desc">${PL.resetDesc}</div></div>
+      </button>
+    </div>
+  `;
+
+  KM.initFadeUp();
+
+  // Store initial statuses for change detection
+  apps.forEach(a => { _prevStatuses[a.id] = a.status; });
+
+  // Poll every 15 seconds for status updates
+  if (!window._pollInterval) {
+    window._pollInterval = setInterval(refreshApplications, 15000);
+  }
+}
+
+// ── Auto-refresh applications for status updates ─────────────────
+let _prevStatuses = {};
+
+async function refreshApplications() {
+  const ar = await KM.api('GET', `/api/user/applications?phone=${PHONE}`);
+  if (!ar.success || !ar.data) return;
+  const apps = ar.data;
+
+  // Check for status changes
+  apps.forEach(a => {
+    const prev = _prevStatuses[a.id];
+    if (prev && prev !== a.status) {
+      const statusLabels = {
+        accepted: { hi: '✅ Aapki application accept ho gayi!', en: '✅ Your application was accepted!', te: '✅ మీ దరఖాస్తు అంగీకరించబడింది!' },
+        rejected:  { hi: '❌ Aapki application reject hui', en: '❌ Your application was rejected', te: '❌ మీ దరఖాస్తు తిరస్కరించబడింది' },
+        in_progress: { hi: '🚀 Kaam shuru ho gaya!', en: '🚀 Work has started!', te: '🚀 పని ప్రారంభమైంది!' },
+        completed:   { hi: '🎉 Kaam complete ho gaya!', en: '🎉 Work completed!', te: '🎉 పని పూర్తైంది!' }
+      };
+      const msgObj = statusLabels[a.status];
+      if (msgObj) KM.toast(`${msgObj[_pl] || msgObj.en} — ${a.job_title || 'Job'}`, a.status === 'rejected' ? 'error' : 'success');
+    }
+    _prevStatuses[a.id] = a.status;
+  });
+
+  // Re-render only the app-list section without full page reload
+  const done = apps.filter(a => a.status === 'completed').length;
+  document.getElementById('stat-done').textContent    = done;
+  document.getElementById('stat-applied').textContent = apps.length;
+
+  const appListEl = document.querySelector('.app-list');
+  const emptyEl   = document.querySelector('.empty-hist');
+  if (!appListEl && !emptyEl) return; // dynamic section not rendered yet
+
+  const container = appListEl ? appListEl.parentElement : emptyEl.parentElement;
+  if (!container) return;
+
+  if (apps.length === 0) {
+    container.innerHTML = `<div class="empty-hist">
+      <div class="ei">📭</div>
+      <p style="margin-bottom:16px">${PL.noApps}</p>
+      <a href="/jobs" class="btn btn-primary btn-sm">${PL.findJobs}</a>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="app-list">
+    ${apps.map(a => {
+      const tlSteps = {
+    hi: [
+      { key: 'applied',     label: 'Applied',    icon: '📝' },
+      { key: 'accepted',    label: 'Accept',     icon: '✅' },
+      { key: 'in_progress', label: 'Kaam Shuru', icon: '🚀' },
+      { key: 'completed',   label: 'Khatam',     icon: '🎉' },
+    ],
+    en: [
+      { key: 'applied',     label: 'Applied',    icon: '📝' },
+      { key: 'accepted',    label: 'Accepted',   icon: '✅' },
+      { key: 'in_progress', label: 'In Progress',icon: '🚀' },
+      { key: 'completed',   label: 'Completed',  icon: '🎉' },
+    ],
+    te: [
+      { key: 'applied',     label: 'దరఖాస్తు',  icon: '📝' },
+      { key: 'accepted',    label: 'అంగీకారం', icon: '✅' },
+      { key: 'in_progress', label: 'పని జరుగుతోంది', icon: '🚀' },
+      { key: 'completed',   label: 'పూర్తైంది', icon: '🎉' },
+    ]
+  };
+  const steps = tlSteps[_pl] || tlSteps.en;
+      const ORDER = { applied:0, accepted:1, in_progress:2, completed:3, rejected:-1 };
+      const curIdx = ORDER[a.status] ?? 0;
+      const isRejected = a.status === 'rejected';
+
+      const rejTxt = { hi: '✕ Application Reject Ho Gayi', en: '✕ Application Rejected', te: '✕ దరఖాస్తు తిరస్కరించబడింది' };
+      const timelineHTML = isRejected
+        ? `<div style="padding:8px 18px 14px;font-size:.75rem;color:#DC2626;font-weight:600">${rejTxt[_pl] || rejTxt.en}</div>`
+        : `<div class="app-timeline">
+            ${steps.map((step, i) => {
+              const done   = i < curIdx;
+              const active = i === curIdx;
+              const cls    = done ? 'done' : active ? 'active' : '';
+              return `<div class="tl-step">
+                <div class="tl-dot ${cls}">${done ? '✓' : active ? step.icon : i+1}</div>
+                <div class="tl-label" style="color:${active ? 'var(--clay)' : done ? 'var(--forest)' : 'var(--muted)'}">${step.label}</div>
+              </div>`;
+            }).join('')}
+          </div>`;
+
+      const statusColors = {
+        applied:'#DBEAFE,#1E40AF', accepted:'#D1FAE5,#065F46',
+        in_progress:'#FEF3C7,#92400E', completed:'#ECFDF5,#065F46', rejected:'#FEE2E2,#991B1B'
+      };
+
+      return `
+      <div class="app-card fade-up">
+        <div class="app-status-bar sb-${a.status || 'applied'}"></div>
+        <div class="app-card-body">
+          <div class="app-icon" style="background:${a.job_type === 'skilled' ? 'var(--forest-pale)' : 'var(--clay-pale)'}">
+            ${a.job_type === 'skilled' ? '🧠' : '⚡'}
+          </div>
+          <div class="app-info">
+            <div class="app-title">${KM.esc(a.job_title || 'Job')}</div>
+            <div class="app-meta">
+              ${KM.currency(a.job_salary || 0)}/${a.job_salary_unit || 'day'}
+              ${a.job_location ? ` &nbsp;·&nbsp; 📍${KM.esc(a.job_location)}` : ''}
+              ${a.rating > 0 ? ` &nbsp;·&nbsp; ⭐${a.rating}` : ''}
+            </div>
+            ${a.application_id ? `<div class="app-id">🆔 ${KM.esc(a.application_id)}</div>` : ''}
+          </div>
+          <span class="status-pill sp-${a.status || 'applied'}">${KM.cap((a.status||'applied').replace('_',' '))}</span>
+        </div>
+        ${timelineHTML}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function resetConv() {
+  await KM.api('POST', '/api/user/reset-conversation', { phone: PHONE });
+  KM.toast(PL.resetSuccess, 'success');
+}
+
+function editProfile() {
+  const name = prompt(PL.editPrompt);
+  if (!name) return;
+  KM.api('PUT', '/api/user/profile', { phone: PHONE, name }).then(() => {
+    KM.toast(PL.editSuccess, 'success');
+    loadProfile();
+  });
+}
+
+function doLogout() {
+  localStorage.removeItem('km_phone');
+  localStorage.removeItem('km_lang');
+  localStorage.removeItem('km_location');
+  localStorage.removeItem('km_name');
+  KM.toast(PL.logoutMsg, 'success');
+  setTimeout(() => { window.location.href = '/'; }, 800);
+}
+
+// ── RESUME ────────────────────────────────────────────────────────────────
+const R_L = {
+  hi: {
+    loading: '⏳ AI resume bana raha hai...',
+    summary: 'सारांश', skills: 'कौशल', experience: 'अनुभव',
+    strengths: 'खूबियाँ', attendance: 'उपस्थिति / काम पूरा करना',
+    feedback: 'नियोक्ता फीडबैक', recommendation: 'सिफारिश',
+    trustLbl: 'ट्रस्ट स्कोर', doneLbl: 'काम पूरे', ratingLbl: 'रेटिंग', earnLbl: 'कमाई',
+    print: 'इंतजाम करें / PDF', close: 'बंद करें',
+    error: 'Resume nahi ban saka. Dobara try karein.'
+  },
+  en: {
+    loading: '⏳ AI is generating your resume...',
+    summary: 'Summary', skills: 'Skills', experience: 'Experience',
+    strengths: 'Strengths', attendance: 'Attendance & Reliability',
+    feedback: 'Employer Feedback', recommendation: 'Recommendation',
+    trustLbl: 'Trust Score', doneLbl: 'Jobs Done', ratingLbl: 'Avg Rating', earnLbl: 'Earned',
+    print: 'Print / Save PDF', close: 'Close',
+    error: 'Could not generate resume. Please try again.'
+  },
+  te: {
+    loading: '⏳ AI మీ రెజ్యూమే తయారు చేస్తోంది...',
+    summary: 'సారాంశం', skills: 'నైపుణ్యాలు', experience: 'అనుభవం',
+    strengths: 'శక్తులు', attendance: 'హాజరు / నిజాయితి',
+    feedback: 'యజమాని అభిప్రాయం', recommendation: 'సిఫారసు',
+    trustLbl: 'ట్రస్ట్ స్కోర్', doneLbl: 'పూర్తి పనులు', ratingLbl: 'సగటు రేటింగ్', earnLbl: 'సంపాదన',
+    print: 'ప్రింట్ / PDF', close: 'మూసివేయండి',
+    error: 'రెజ్యూమే తయారు కాలేదు. మళ్ళీ ప్రయత్నించండి.'
+  }
+};
+const RL = R_L[_pl] || R_L.en;
+
+async function viewResume() {
+  // Show overlay with loading state
+  const overlay = document.getElementById('resume-overlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  document.getElementById('resume-body').innerHTML =
+    `<div style="text-align:center;padding:40px 20px;color:var(--muted)">
+       <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+       <p>${RL.loading}</p>
+     </div>`;
+
+  // Set static labels
+  document.getElementById('r-trust-lbl').textContent  = RL.trustLbl;
+  document.getElementById('r-done-lbl').textContent   = RL.doneLbl;
+  document.getElementById('r-rating-lbl').textContent = RL.ratingLbl;
+  document.getElementById('r-earn-lbl').textContent   = RL.earnLbl;
+  document.getElementById('r-print-txt').textContent  = RL.print;
+  document.getElementById('r-close-txt').textContent  = RL.close;
+
+  const r = await KM.api('GET', `/api/user/resume?phone=${PHONE}&lang=${_pl}`);
+
+  if (!r.success || !r.data) {
+    document.getElementById('resume-body').innerHTML =
+      `<div style="text-align:center;padding:40px;color:var(--muted)">
+         <div style="font-size:2rem">❌</div>
+         <p style="margin-top:12px">${RL.error}</p>
+       </div>`;
+    return;
+  }
+
+  const { resume, user } = r.data;
+
+  // Fill header stats
+  document.getElementById('r-name').textContent  = user.name || 'Worker';
+  document.getElementById('r-meta').textContent  =
+    `📍 ${user.location || ''} · 🛠 ${KM.cap(user.skill || 'General')} (${KM.cap(user.skill_level || 'beginner')})`;
+  document.getElementById('r-grade').textContent = resume.overall_grade || 'B';
+  document.getElementById('r-trust').textContent = user.trust_score || 50;
+  document.getElementById('r-done').textContent  = user.jobs_completed || 0;
+  document.getElementById('r-rating').textContent = user.avg_rating > 0 ? user.avg_rating + '★' : 'N/A';
+  document.getElementById('r-earn').textContent  = KM.currency(user.earnings || 0);
+
+  // Build resume body
+  const section = (icon, title, content) => `
+    <div class="r-section">
+      <div class="r-section-title">${icon} ${title}</div>
+      ${content}
+    </div>`;
+
+  const tags = (arr, cls = '') =>
+    `<div class="r-tags">${(arr || []).map(t =>
+      `<span class="r-tag ${cls}">${KM.esc(t)}</span>`).join('')}</div>`;
+
+  document.getElementById('resume-body').innerHTML =
+    section('📝', RL.summary,
+      `<p class="r-text">${KM.esc(resume.summary || '')}</p>`) +
+    section('🛠', RL.skills,
+      tags(resume.skills, '')) +
+    section('💼', RL.experience,
+      `<p class="r-text">${KM.esc(resume.experience || '')}</p>`) +
+    section('⭐', RL.strengths,
+      tags(resume.strengths, 'green')) +
+    section('📅', RL.attendance,
+      `<p class="r-text">${KM.esc(resume.attendance || '')}</p>`) +
+    section('💬', RL.feedback,
+      `<p class="r-text">${KM.esc(resume.feedback_summary || '')}</p>`) +
+    section('🏆', RL.recommendation,
+      `<div style="background:var(--forest-pale);border-radius:12px;padding:14px 16px;">
+         <p class="r-text" style="color:var(--forest);font-weight:600">
+           ${KM.esc(resume.recommendation || '')}
+         </p>
+       </div>`);
+}
+
+function closeResume() {
+  document.getElementById('resume-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function printResume() {
+  window.print();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeResume();
+});
+</script>
+{% endblock %}

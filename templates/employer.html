@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Employer Dashboard{% endblock %}
+{% block head %}
+<style>
+.emp-wrap { max-width: 960px; margin: 0 auto; padding: 28px 18px 60px; }
+
+.emp-hero {
+  background: linear-gradient(130deg, var(--forest) 0%, #2A8F5C 100%);
+  border-radius: var(--r-xl); padding: 28px 32px;
+  color: #fff; display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 28px;
+  box-shadow: var(--shadow-lg);
+}
+.emp-hero h2 { font-family: var(--font-display); color: #fff; margin-bottom: 4px; }
+.emp-hero p  { opacity: .8; font-size: .88rem; }
+.emp-hero-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.ehs-item .ehs-val { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; color: #fff; }
+.ehs-item .ehs-lbl { font-size: .72rem; opacity: .7; }
+
+.section-title {
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 700;
+  margin: 28px 0 14px; display: flex; align-items: center; gap: 8px; color: var(--soil);
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Post job form */
+.post-form {
+  background: var(--white); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md); padding: 28px;
+  border: 1px solid var(--border);
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: .82rem; font-weight: 700; color: var(--soil); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--white);
+  font-family: var(--font-body); font-size: .9rem; color: var(--soil);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(30,107,69,.12);
+}
+.form-group.full { grid-column: 1 / -1; }
+
+/* Jobs table */
+.jobs-table { width: 100%; border-collapse: collapse; }
+.jobs-table th {
+  text-align: left; font-size: .75rem; font-weight: 700;
+  color: var(--muted); padding: 10px 14px;
+  border-bottom: 2px solid var(--border); white-space: nowrap;
+}
+.jobs-table td {
+  padding: 14px; border-bottom: 1px solid var(--border);
+  font-size: .84rem; vertical-align: middle;
+}
+.jobs-table tr:last-child td { border-bottom: none; }
+.jobs-table tr:hover td { background: var(--sand); }
+.jt-title { font-weight: 700; }
+.jt-meta  { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* Applicant cards */
+.applicant-panel {
+  background: var(--white); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md); padding: 24px;
+  border: 1px solid var(--border); margin-bottom: 20px;
+}
+.ap-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.ap-job-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; }
+.ap-job-meta  { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+.applicant-card {
+  background: var(--sand); border-radius: var(--r-lg);
+  padding: 16px 18px; border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 10px; transition: box-shadow .15s;
+}
+.applicant-card:hover { box-shadow: var(--shadow-md); }
+.ac-avatar {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--forest), #2A8F5C);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 1.1rem;
+}
+.ac-info { flex: 1; min-width: 0; }
+.ac-name  { font-weight: 700; font-size: .9rem; }
+.ac-skill { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+.ac-trust {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .75rem; margin-top: 5px; flex-wrap: wrap;
+}
+.ac-badge {
+  padding: 3px 10px; border-radius: 100px; font-size: .68rem; font-weight: 700;
+}
+.ac-badge.verified   { background: var(--forest-pale); color: var(--forest); }
+.ac-badge.building   { background: var(--clay-pale); color: var(--clay); }
+.ac-badge.applied    { background: #DBEAFE; color: #1E40AF; }
+.ac-badge.accepted   { background: #D1FAE5; color: #065F46; }
+.ac-badge.rejected   { background: #FEE2E2; color: #991B1B; }
+.ac-badge.completed  { background: #ECFDF5; color: #065F46; }
+
+.ac-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--muted);
+}
+.empty-state .ei { font-size: 2.5rem; margin-bottom: 10px; }
+
+@media(max-width:640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .emp-hero  { flex-direction: column; }
+  .applicant-card { flex-wrap: wrap; }
+  .ac-actions { width: 100%; justify-content: flex-end; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="emp-wrap">
+
+  <!-- Hero -->
+  <div class="emp-hero">
+    <div>
+      <h2 id="emp-greeting">🏢 Employer Dashboard</h2>
+      <p id="emp-sub">Workers dhundho, jobs post karo, applications manage karo</p>
+    </div>
+    <div class="emp-hero-stats">
+      <div class="ehs-item">
+        <div class="ehs-val" id="stat-posted">0</div>
+        <div class="ehs-lbl" id="lbl-posted">Jobs Posted</div>
+      </div>
+      <div class="ehs-item">
+        <div class="ehs-val" id="stat-applicants">0</div>
+        <div class="ehs-lbl" id="lbl-applicants">Total Applicants</div>
+      </div>
+      <div class="ehs-item">
+        <div class="ehs-val" id="stat-accepted">0</div>
+        <div class="ehs-lbl" id="lbl-accepted">Accepted</div>
+      </div>
+      <div class="ehs-item" style="cursor:pointer" onclick="empLogout()">
+        <div class="ehs-val" style="font-size:1.4rem">🚪</div>
+        <div class="ehs-lbl">Logout</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Job Form -->
+  <div class="section-title">➕ <span id="lbl-post-section">Naya Job Post Karo</span></div>
+  <div class="post-form">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label id="lbl-title">Job Title *</label>
+        <input id="inp-title" placeholder="e.g. Electrician chahiye, Safai wala chahiye">
+      </div>
+      <div class="form-group">
+        <label id="lbl-salary">Salary (₹) *</label>
+        <input id="inp-salary" type="number" placeholder="e.g. 500">
+      </div>
+      <div class="form-group">
+        <label id="lbl-unit">Salary Unit *</label>
+        <select id="inp-unit">
+          <option value="day">Per Day</option>
+          <option value="hour">Per Hour</option>
+          <option value="month">Per Month</option>
+          <option value="week">Per Week</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label id="lbl-location">Location *</label>
+        <input id="inp-location" placeholder="e.g. Jaipur, Rajasthan">
+      </div>
+      <div class="form-group">
+        <label id="lbl-duration">Duration *</label>
+        <input id="inp-duration" placeholder="e.g. 1 din, 1 hafte, Permanent">
+      </div>
+      <div class="form-group">
+        <label id="lbl-type">Job Type</label>
+        <select id="inp-type">
+          <option value="instant">Instant (Short-term)</option>
+          <option value="skilled">Skilled (Long-term)</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label id="lbl-desc">Description</label>
+        <textarea id="inp-desc" rows="2" placeholder="Kaam ki details likhein..."></textarea>
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
+      <button class="btn btn-success btn-lg" onclick="postJob()" id="post-btn">
+        ✅ <span id="post-btn-txt">Job Post Karo</span>
+      </button>
+      <span style="font-size:.75rem;color:var(--muted)" id="post-note">* Required fields</span>
+    </div>
+  </div>
+
+  <!-- Posted Jobs -->
+  <div class="section-title">💼 <span id="lbl-my-jobs">Meri Posted Jobs</span></div>
+  <div id="jobs-container">
+    <div class="skel" style="height:60px;border-radius:16px;margin-bottom:10px"></div>
+    <div class="skel" style="height:60px;border-radius:16px"></div>
+  </div>
+
+  <!-- Applicants -->
+  <div class="section-title" id="applicants-section-title" style="display:none">
+    👥 <span id="lbl-applicants-section">Applicants</span>
+  </div>
+  <div id="applicants-container"></div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PHONE = '{{ phone }}' || KM.getPhone();
+const lang  = KM.getLang() || 'hi';
+// _EMP_PHONE is set in DOMContentLoaded after resolving from URL/localStorage
+function getEmpPhone() { return window._EMP_PHONE || PHONE || KM.getPhone(); }
+
+const L = {
+  hi: {
+    greeting: '🏢 Employer Dashboard',
+    sub: 'Workers dhundho, jobs post karo, applications manage karo',
+    posted: 'Jobs Posted', applicants: 'Kul Applicants', accepted: 'Accept Kiye',
+    postSection: 'Naya Job Post Karo',
+    title: 'Job Title *', salary: 'Salary (₹) *', unit: 'Salary Unit *',
+    location: 'Location *', duration: 'Duration *', type: 'Job Type', desc: 'Description',
+    postBtn: 'Job Post Karo', postNote: '* Zaroori fields',
+    myJobs: 'Meri Posted Jobs', appSection: 'Applicants',
+    noJobs: 'Abhi koi job post nahi ki. Upar form se post karein!',
+    noApps: 'Abhi koi applicant nahi.',
+    accept: 'Accept', reject: 'Reject', accepted: 'Accepted ✓', rejected: 'Rejected ✗',
+    viewApps: 'Applicants Dekho',
+    titlePh: 'e.g. Electrician chahiye, Safai wala chahiye',
+    salaryPh: 'e.g. 500', locPh: 'e.g. Jaipur, Rajasthan', durPh: 'e.g. 1 din, Permanent',
+    descPh: 'Kaam ki details likhein...',
+    postSuccess: 'Job post ho gayi!', postErr: 'Sab fields bharo',
+    loginErr: 'Pehle login karein'
+  },
+  en: {
+    greeting: '🏢 Employer Dashboard',
+    sub: 'Find workers, post jobs, manage applications',
+    posted: 'Jobs Posted', applicants: 'Total Applicants', accepted: 'Accepted',
+    postSection: 'Post a New Job',
+    title: 'Job Title *', salary: 'Salary (₹) *', unit: 'Salary Unit *',
+    location: 'Location *', duration: 'Duration *', type: 'Job Type', desc: 'Description',
+    postBtn: 'Post Job', postNote: '* Required fields',
+    myJobs: 'My Posted Jobs', appSection: 'Applicants',
+    noJobs: 'No jobs posted yet. Use the form above!',
+    noApps: 'No applicants yet.',
+    accept: 'Accept', reject: 'Reject', accepted: 'Accepted ✓', rejected: 'Rejected ✗',
+    viewApps: 'View Applicants',
+    titlePh: 'e.g. Need Electrician, Need Cleaner',
+    salaryPh: 'e.g. 500', locPh: 'e.g. Jaipur, Rajasthan', durPh: 'e.g. 1 day, Permanent',
+    descPh: 'Describe the work...',
+    postSuccess: 'Job posted successfully!', postErr: 'Fill all required fields',
+    loginErr: 'Please login first'
+  },
+  te: {
+    greeting: '🏢 యజమాని డాష్‌బోర్డ్',
+    sub: 'కార్మికులను వెతకండి, ఉద్యోగాలు పోస్ట్ చేయండి',
+    posted: 'పోస్ట్ చేసిన ఉద్యోగాలు', applicants: 'మొత్తం దరఖాస్తుదారులు', accepted: 'అంగీకరించారు',
+    postSection: 'కొత్త ఉద్యోగం పోస్ట్ చేయండి',
+    title: 'ఉద్యోగ శీర్షిక *', salary: 'జీతం (₹) *', unit: 'జీతం యూనిట్ *',
+    location: 'స్థానం *', duration: 'వ్యవధి *', type: 'ఉద్యోగ రకం', desc: 'వివరణ',
+    postBtn: 'ఉద్యోగం పోస్ట్ చేయండి', postNote: '* అవసరమైన ఫీల్డ్‌లు',
+    myJobs: 'నా పోస్ట్ చేసిన ఉద్యోగాలు', appSection: 'దరఖాస్తుదారులు',
+    noJobs: 'ఇంకా ఉద్యోగాలు పోస్ట్ చేయలేదు.',
+    noApps: 'ఇంకా దరఖాస్తుదారులు లేరు.',
+    accept: 'అంగీకరించు', reject: 'తిరస్కరించు', accepted: 'అంగీకరించారు ✓', rejected: 'తిరస్కరించారు ✗',
+    viewApps: 'దరఖాస్తులు చూడండి',
+    titlePh: 'e.g. Electrician కావాలి', salaryPh: 'e.g. 500',
+    locPh: 'e.g. హైదరాబాద్', durPh: 'e.g. 1 రోజు, శాశ్వత',
+    descPh: 'పని వివరాలు రాయండి...',
+    postSuccess: 'ఉద్యోగం పోస్ట్ అయింది!', postErr: 'అన్ని ఫీల్డ్‌లు నింపండి',
+    loginErr: 'ముందు లాగిన్ చేయండి'
+  }
+};
+const s = L[lang] || L.hi;
+
+// Apply language strings
+document.getElementById('emp-greeting').textContent       = s.greeting;
+document.getElementById('emp-sub').textContent            = s.sub;
+document.getElementById('lbl-posted').textContent         = s.posted;
+document.getElementById('lbl-applicants').textContent     = s.applicants;
+document.getElementById('lbl-accepted').textContent       = s.accepted;
+document.getElementById('lbl-post-section').textContent   = s.postSection;
+document.getElementById('lbl-title').textContent          = s.title;
+document.getElementById('lbl-salary').textContent         = s.salary;
+document.getElementById('lbl-unit').textContent           = s.unit;
+document.getElementById('lbl-location').textContent       = s.location;
+document.getElementById('lbl-duration').textContent       = s.duration;
+document.getElementById('lbl-type').textContent           = s.type;
+document.getElementById('lbl-desc').textContent           = s.desc;
+document.getElementById('post-btn-txt').textContent       = s.postBtn;
+document.getElementById('post-note').textContent          = s.postNote;
+document.getElementById('lbl-my-jobs').textContent        = s.myJobs;
+document.getElementById('lbl-applicants-section').textContent = s.appSection;
+document.getElementById('inp-title').placeholder          = s.titlePh;
+document.getElementById('inp-salary').placeholder         = s.salaryPh;
+document.getElementById('inp-location').placeholder       = s.locPh;
+document.getElementById('inp-duration').placeholder       = s.durPh;
+document.getElementById('inp-desc').placeholder           = s.descPh;
+
+// ── Post Job ──────────────────────────────────────────────────────
+async function postJob() {
+  const phone = getEmpPhone();
+  if (!phone) { KM.toast(s.loginErr, 'error'); return; }
+
+  const title    = document.getElementById('inp-title').value.trim();
+  const salary   = document.getElementById('inp-salary').value.trim();
+  const unit     = document.getElementById('inp-unit').value;
+  const location = document.getElementById('inp-location').value.trim();
+  const duration = document.getElementById('inp-duration').value.trim();
+  const type     = document.getElementById('inp-type').value;
+  const desc     = document.getElementById('inp-desc').value.trim();
+
+  if (!title || !salary || !location || !duration) {
+    KM.toast(s.postErr, 'error'); return;
+  }
+
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true;
+  document.getElementById('post-btn-txt').textContent = '⏳...';
+
+  const r = await KM.api('POST', '/api/jobs/post', {
+    phone: getEmpPhone(), title, salary: parseFloat(salary),
+    salary_unit: unit, location, duration,
+    job_type: type, description: desc
+  });
+
+  btn.disabled = false;
+  document.getElementById('post-btn-txt').textContent = s.postBtn;
+
+  if (r.success) {
+    KM.toast(s.postSuccess, 'success');
+    document.getElementById('inp-title').value    = '';
+    document.getElementById('inp-salary').value   = '';
+    document.getElementById('inp-location').value = '';
+    document.getElementById('inp-duration').value = '';
+    document.getElementById('inp-desc').value     = '';
+    loadJobs();
+  } else {
+    KM.toast(r.message || s.postErr, 'error');
+  }
+}
+
+// ── Load posted jobs ──────────────────────────────────────────────
+async function loadJobs() {
+  const phone = getEmpPhone();
+  if (!phone) return;
+  const r = await KM.api('GET', `/api/user/jobs-posted?phone=${phone}`);
+  const container = document.getElementById('jobs-container');
+
+  if (!r.success || !r.data || !r.data.length) {
+    container.innerHTML = `<div class="empty-state"><div class="ei">📭</div><p>${s.noJobs}</p></div>`;
+    document.getElementById('stat-posted').textContent = 0;
+    return;
+  }
+
+  const jobs = r.data;
+  document.getElementById('stat-posted').textContent = jobs.length;
+
+  let totalApplicants = 0;
+  let totalAccepted   = 0;
+  jobs.forEach(j => {
+    totalApplicants += j.applicants || 0;
+  });
+  document.getElementById('stat-applicants').textContent = totalApplicants;
+
+  container.innerHTML = `
+    <div style="background:var(--white);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);border:1px solid var(--border);overflow:hidden">
+      <table class="jobs-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Salary</th>
+            <th>Location</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Applicants</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${jobs.map(j => `
+            <tr>
+              <td>
+                <div class="jt-title">${KM.esc(j.title)}</div>
+                <div class="jt-meta">${j.job_type === 'skilled' ? '🧠 Skilled' : '⚡ Instant'}</div>
+              </td>
+              <td><strong>${KM.currency(j.salary)}</strong><span style="font-size:.72rem;color:var(--muted)">/${j.salary_unit}</span></td>
+              <td>📍 ${KM.esc(j.location || '—')}</td>
+              <td>⏱ ${KM.esc(j.duration || '—')}</td>
+              <td><span style="padding:4px 10px;border-radius:100px;font-size:.72rem;font-weight:700;background:${j.status === 'open' ? 'var(--forest-pale)' : 'var(--clay-pale)'};color:${j.status === 'open' ? 'var(--forest)' : 'var(--clay)'}">${j.status}</span></td>
+              <td style="text-align:center;font-weight:700">${j.applicants || 0}</td>
+              <td>
+                <button class="btn btn-outline btn-sm" onclick="loadApplicants(${j.id}, '${KM.esc(j.title).replace(/'/g,'')}')">
+                  👥 ${s.viewApps}
+                </button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Load applicants for a job ─────────────────────────────────────
+async function loadApplicants(jobId, jobTitle) {
+  const section = document.getElementById('applicants-section-title');
+  const container = document.getElementById('applicants-container');
+  section.style.display = 'flex';
+  container.innerHTML = `<div class="skel" style="height:80px;border-radius:16px;margin-bottom:10px"></div>`;
+
+  // Scroll to applicants
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const r = await KM.api('GET', `/api/employer/applicants/${jobId}?phone=${getEmpPhone()}`);
+
+  if (!r.success || !r.data || !r.data.length) {
+    container.innerHTML = `
+      <div class="applicant-panel">
+        <div class="ap-header">
+          <div><div class="ap-job-title">📋 ${KM.esc(jobTitle)}</div></div>
+        </div>
+        <div class="empty-state"><div class="ei">👤</div><p>${s.noApps}</p></div>
+      </div>`;
+    return;
+  }
+
+  const apps = r.data;
+  let accepted = apps.filter(a => a.status === 'accepted').length;
+  document.getElementById('stat-accepted').textContent = accepted;
+
+  container.innerHTML = `
+    <div class="applicant-panel">
+      <div class="ap-header">
+        <div>
+          <div class="ap-job-title">📋 ${KM.esc(jobTitle)}</div>
+          <div class="ap-job-meta">${apps.length} applicant(s)</div>
+        </div>
+      </div>
+      ${apps.map(a => `
+        <div class="applicant-card" id="ac-${a.wh_id}">
+          <div class="ac-avatar">${(a.name || 'W')[0].toUpperCase()}</div>
+          <div class="ac-info">
+            <div class="ac-name">${KM.esc(a.name || 'Worker')}</div>
+            <div class="ac-skill">
+              ${a.skill ? `🛠 ${KM.cap(a.skill)} · ${KM.cap(a.skill_level || 'beginner')}` : '👷 General Worker'}
+              ${a.location ? ` · 📍${KM.esc(a.location)}` : ''}
+            </div>
+            <div class="ac-trust">
+              <span>⭐ ${a.avg_rating > 0 ? a.avg_rating : '—'}</span>
+              <span>|</span>
+              <span>${a.jobs_completed} jobs done</span>
+              <span>|</span>
+              <span class="ac-badge ${a.verified ? 'verified' : 'building'}">${a.badge}</span>
+              <span class="ac-badge ${a.status}">${a.status}</span>
+            </div>
+          </div>
+          <div class="ac-actions" id="ac-actions-${a.wh_id}" data-phone="${a.phone || ''}" data-name="${KM.esc(a.name||'Worker').replace(/"/g,'')}">
+            ${renderActions(a)}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── Render action buttons based on current status ─────────────────
+function renderActions(a) {
+  const wid  = a.wh_id;
+  const name = (a.name || 'Worker').replace(/'/g, '').replace(/"/g, '');
+  const ph   = (a.phone || '').replace(/[^0-9+]/g, '');
+
+  if (a.status === 'applied') {
+    return `
+      <button class="btn btn-success btn-sm" onclick="updateStatus(${wid},'accepted','${name}')">
+        ✅ ${s.accept}
+      </button>
+      <button class="btn btn-sm" style="background:#FEE2E2;color:#991B1B;border:none"
+              onclick="updateStatus(${wid},'rejected','${name}')">
+        ✕ ${s.reject}
+      </button>`;
+  }
+  if (a.status === 'accepted') {
+    return `
+      <a class="btn btn-sm" style="background:#DBEAFE;color:#1E40AF;border:none;text-decoration:none"
+         href="tel:${ph}">📞 Call</a>
+      <button class="btn btn-sm" style="background:#FEF3C7;color:#92400E;border:none"
+              onclick="updateStatus(${wid},'in_progress','${name}')">🚀 Kaam Shuru</button>`;
+  }
+  if (a.status === 'in_progress') {
+    return `
+      <span class="ac-badge" style="background:#FEF3C7;color:#92400E;padding:8px 12px">🔨 Kaam Chal Raha</span>
+      <button class="btn btn-sm" style="background:#D1FAE5;color:#065F46;border:none"
+              onclick="updateStatus(${wid},'completed','${name}')">✅ Kaam Khatam</button>`;
+  }
+  if (a.status === 'completed') {
+    return `<span class="ac-badge completed" style="padding:8px 14px;font-size:.78rem">🎉 Completed</span>`;
+  }
+  if (a.status === 'rejected') {
+    return `<span class="ac-badge rejected" style="padding:8px 14px;font-size:.78rem">✕ Rejected</span>`;
+  }
+  return `<span class="ac-badge" style="padding:8px 14px;font-size:.78rem">${KM.cap(a.status)}</span>`;
+}
+
+// ── Update application status ─────────────────────────────────────
+async function updateStatus(whId, status, workerName) {
+  const lang = KM.getLang() || 'hi';
+  const r = await KM.api('POST', `/api/applications/${whId}/status`, { status });
+  if (!r.success) { KM.toast(r.message || 'Error', 'error'); return; }
+
+  // Re-render action buttons with new status
+  const actionsEl = document.getElementById(`ac-actions-${whId}`);
+  if (actionsEl) {
+    const ph = actionsEl.dataset.phone || '';
+    actionsEl.innerHTML = renderActions({ wh_id: whId, status, name: workerName, phone: ph });
+  }
+
+  // Update status badge inside the card
+  const card = document.getElementById(`ac-${whId}`);
+  if (card) {
+    const badge = card.querySelector('.ac-badge.applied, .ac-badge.accepted, .ac-badge.in_progress, .ac-badge.completed, .ac-badge.rejected');
+    if (badge) { badge.className = `ac-badge ${status}`; badge.textContent = status; }
+  }
+
+  const toastMap = {
+    hi: {
+      accepted:    `✅ ${workerName} accept kiya!`,
+      rejected:    `✕ ${workerName} reject kiya`,
+      in_progress: `🚀 ${workerName} ka kaam shuru!`,
+      completed:   `🎉 ${workerName} ka kaam khatam!`,
+    },
+    en: {
+      accepted:    `✅ ${workerName} accepted!`,
+      rejected:    `✕ ${workerName} rejected`,
+      in_progress: `🚀 ${workerName} work started!`,
+      completed:   `🎉 ${workerName} work completed!`,
+    },
+    te: {
+      accepted:    `✅ ${workerName} అంగీకరించారు!`,
+      rejected:    `✕ ${workerName} తిరస్కరించారు`,
+      in_progress: `🚀 ${workerName} పని ప్రారంభమైంది!`,
+      completed:   `🎉 ${workerName} పని పూర్తైంది!`,
+    }
+  };
+  const toastMsg = (toastMap[lang] || toastMap.en)[status] || `${workerName} — ${status}`;
+  KM.toast(toastMsg, ['accepted','in_progress','completed'].includes(status) ? 'success' : 'default');
+
+  if (status === 'accepted') {
+    const cur = parseInt(document.getElementById('stat-accepted').textContent) || 0;
+    document.getElementById('stat-accepted').textContent = cur + 1;
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Resolve phone: URL param > localStorage employer phone > general phone
+  const urlPhone = new URLSearchParams(window.location.search).get('phone');
+  const empPhone = localStorage.getItem('km_emp_phone');
+  const resolvedPhone = urlPhone || empPhone || KM.getPhone();
+
+  if (!resolvedPhone) {
+    window.location.href = '/employer-login';
+    return;
+  }
+
+  // Patch PHONE constant at runtime
+  window._EMP_PHONE = resolvedPhone;
+  KM.setPhone(resolvedPhone);
+
+  // Show company/employer name in hero
+  const company = localStorage.getItem('km_emp_company') || '';
+  const empName = localStorage.getItem('km_emp_name') || '';
+  if (company) {
+    document.getElementById('emp-greeting').textContent = '🏢 ' + company;
+    document.getElementById('emp-sub').textContent = empName ? empName + ' · Employer Dashboard' : 'Employer Dashboard';
+  } else if (empName) {
+    document.getElementById('emp-greeting').textContent = '🏢 ' + empName + ' ka Dashboard';
+  }
+
+  loadJobs();
+});
+
+function empLogout() {
+  localStorage.removeItem('km_emp_phone');
+  localStorage.removeItem('km_emp_name');
+  localStorage.removeItem('km_emp_company');
+  window.location.href = '/employer-login';
+}
+</script>
+{% endblock %}

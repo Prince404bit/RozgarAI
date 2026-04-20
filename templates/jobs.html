@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Browse Jobs{% endblock %}
+{% block head %}
+<style>
+.jobs-hero {
+  background: linear-gradient(120deg,var(--clay) 0%,var(--saffron) 100%);
+  padding: 40px 0 28px; color: #fff; margin-bottom: -20px;
+}
+.jobs-hero h1 { font-family: var(--font-display); color:#fff; }
+.jobs-hero p  { opacity:.85; font-size:.9rem; margin-top:6px; }
+
+.search-bar {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: 18px 20px;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.search-bar input {
+  flex: 2; min-width: 160px;
+}
+.search-bar select {
+  flex: 1; min-width: 120px; padding: 13px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--white);
+  font-family: var(--font-body); font-size: .88rem; color: var(--text);
+  outline: none; cursor: pointer;
+}
+.search-bar select:focus { border-color: var(--clay); }
+
+.filter-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap; margin: 24px 0 16px;
+}
+.ftab {
+  padding: 9px 20px; border-radius: 100px;
+  border: 1.5px solid var(--border); background: var(--white);
+  font-family: var(--font-body); font-size: .8rem; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.ftab.active, .ftab:hover {
+  background: var(--clay); color: #fff; border-color: var(--clay);
+  box-shadow: 0 4px 14px rgba(193,68,14,.25);
+}
+
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.empty-state {
+  grid-column: 1/-1; text-align: center; padding: 80px 20px;
+  color: var(--muted);
+}
+.empty-state .es-icon { font-size: 3.5rem; margin-bottom: 16px; }
+.empty-state h3 { margin-bottom: 8px; color: var(--text); }
+
+/* Count badge */
+.results-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.results-count { font-size: .82rem; color: var(--muted); font-weight: 500; }
+.sort-select {
+  padding: 7px 12px; border-radius: 9px; border: 1px solid var(--border);
+  font-family: var(--font-body); font-size: .78rem; background: var(--white);
+  cursor: pointer; outline: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jobs-hero">
+  <div class="container">
+    <h1>🔎 Browse Jobs</h1>
+    <p>Open jobs aapke aas-paas — skill chahiye ya nahi</p>
+
+    <div class="search-bar fade-up" style="margin-top:20px">
+      <input class="input" id="q-input" placeholder="Job search karein..." style="flex:2;min-width:160px">
+      <select id="type-select">
+        <option value="">All Types</option>
+        <option value="instant">⚡ Instant</option>
+        <option value="skilled">🧠 Skilled</option>
+      </select>
+      <button class="btn btn-primary" onclick="doSearch()">Search</button>
+    </div>
+  </div>
+</div>
+
+<div class="container section">
+  <div class="filter-tabs">
+    <button class="ftab active" data-type="" onclick="filterType(this,'')">All Jobs</button>
+    <button class="ftab" data-type="instant" onclick="filterType(this,'instant')">⚡ Instant</button>
+    <button class="ftab" data-type="skilled" onclick="filterType(this,'skilled')">🧠 Skilled</button>
+    <button class="ftab" data-type="mine" id="tab-mine" onclick="filterType(this,'mine')" style="display:none">📋 My Posts</button>
+  </div>
+
+  <div class="results-bar">
+    <span class="results-count" id="results-count">Loading...</span>
+    <select class="sort-select" id="sort-sel" onchange="sortJobs()">
+      <option value="salary">Sort: Salary ↓</option>
+      <option value="new">Newest first</option>
+    </select>
+  </div>
+
+  <div class="jobs-grid" id="jobs-grid">
+    <!-- Skeletons while loading -->
+    ${[...Array(6)].map(()=>`
+      <div class="job-card">
+        <div class="skel" style="height:18px;width:70%;margin-bottom:12px"></div>
+        <div class="skel" style="height:12px;width:50%;margin-bottom:8px"></div>
+        <div class="skel" style="height:12px;width:40%"></div>
+      </div>`).join('')}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const JOBS_L = {
+  hi: {
+    heroTitle: '🔎 नौकरियाँ खोजें',
+    heroSub:   'आपके पास खुली नौकरियाँ — skill हो या न हो',
+    searchPh:  'नौकरी खोजें...',
+    allTypes:  'सभी प्रकार', instant: '⚡ तुरंत', skilled: '🧠 कुशल',
+    searchBtn: 'खोजें',
+    allJobs: 'सभी नौकरियाँ', myPosts: '📋 मेरी पोस्ट',
+    sortSalary:'वेतन ↓', sortNew:'नई पहले',
+    noJob: 'कोई नौकरी नहीं मिली',
+    noJobSub: 'खोज बदलें या AI से बात करें',
+    aiChat: 'AI से बात करें',
+    postedByYou: '★ आपने पोस्ट किया',
+    noMyPosts: 'आपने अभी कोई job post नहीं की'
+  },
+  en: {
+    heroTitle: '🔎 Browse Jobs',
+    heroSub:   'Open jobs near you — skill or no skill',
+    searchPh:  'Search jobs...',
+    allTypes:  'All Types', instant: '⚡ Instant', skilled: '🧠 Skilled',
+    searchBtn: 'Search',
+    allJobs: 'All Jobs', myPosts: '📋 My Posts',
+    sortSalary:'Sort: Salary ↓', sortNew:'Newest first',
+    noJob: 'No jobs found',
+    noJobSub: 'Change search or talk to AI',
+    aiChat: 'Chat with AI',
+    postedByYou: '★ Posted by you',
+    noMyPosts: 'You have not posted any jobs yet'
+  },
+  te: {
+    heroTitle: '🔎 ఉద్యోగాలు చూడండి',
+    heroSub:   'మీ దగ్గర తెరిచిన ఉద్యోగాలు — నైపుణ్యం ఉన్నా లేకున్నా',
+    searchPh:  'ఉద్యోగం వెతకండి...',
+    allTypes:  'అన్ని రకాలు', instant: '⚡ తక్షణ', skilled: '🧠 నైపుణ్యం',
+    searchBtn: 'వెతకండి',
+    allJobs: 'అన్ని ఉద్యోగాలు', myPosts: '📋 నా పోస్ట్లు',
+    sortSalary:'జీతం ↓', sortNew:'కొత్తవి ముందు',
+    noJob: 'ఉద్యోగాలు దొరకలేదు',
+    noJobSub: 'వెతుకులాట మార్చండి లేదా AI తో మాట్లాడండి',
+    aiChat: 'AI తో మాట్లాడండి',
+    postedByYou: '★ మీరు పోస్ట్ చేసారు',
+    noMyPosts: 'మీరు ఇంకా ఎలాంటి ఉద్యోగం పోస్ట్ చేయలేదు'
+  }
+};
+const _jl = KM.getLang() || 'hi';
+const JL = JOBS_L[_jl] || JOBS_L.en;
+
+// Apply language
+document.querySelector('.jobs-hero h1').textContent    = JL.heroTitle;
+document.querySelector('.jobs-hero p').textContent     = JL.heroSub;
+document.getElementById('q-input').placeholder         = JL.searchPh;
+document.getElementById('type-select').options[0].text = JL.allTypes;
+document.getElementById('type-select').options[1].text = JL.instant;
+document.getElementById('type-select').options[2].text = JL.skilled;
+document.querySelector('.search-bar .btn').textContent = JL.searchBtn;
+document.querySelectorAll('.ftab')[0].textContent      = JL.allJobs;
+document.querySelectorAll('.ftab')[1].textContent      = JL.instant;
+document.querySelectorAll('.ftab')[2].textContent      = JL.skilled;
+document.getElementById('tab-mine').textContent        = JL.myPosts;
+document.getElementById('sort-sel').options[0].text    = JL.sortSalary;
+document.getElementById('sort-sel').options[1].text    = JL.sortNew;
+
+const myPhone = KM.getPhone();
+let allJobs = [], curType = '', myPostedIds = new Set();
+
+// Show My Posts tab only if logged in
+if (myPhone) document.getElementById('tab-mine').style.display = '';
+
+async function loadJobs() {
+  // Load all jobs
+  const r = await KM.api('GET', '/api/jobs');
+  allJobs = r.success ? (r.data || []) : [];
+
+  // Load user's posted jobs to mark them
+  if (myPhone) {
+    const pr = await KM.api('GET', '/api/user/jobs-posted?phone=' + myPhone);
+    if (pr.success && pr.data) {
+      pr.data.forEach(j => myPostedIds.add(j.id));
+    }
+  }
+  renderJobs(allJobs);
+}
+
+function renderJobs(jobs) {
+  const grid = document.getElementById('jobs-grid');
+  document.getElementById('results-count').textContent =
+    `${jobs.length} job${jobs.length !== 1 ? 's' : ''} found`;
+
+  const foundTxt = { hi: `${jobs.length} नौकरियाँ मिलीं`, en: `${jobs.length} job${jobs.length !== 1 ? 's' : ''} found`, te: `${jobs.length} ఉద్యోగాలు దొరికాయి` };
+  document.getElementById('results-count').textContent = foundTxt[_jl] || foundTxt.en;
+
+  if (!jobs.length) {
+    const isMyPosts = curType === 'mine';
+    grid.innerHTML = `<div class="empty-state">
+      <div class="es-icon">${isMyPosts ? '\ud83d\udccb' : '\ud83d\ude15'}</div>
+      <h3>${isMyPosts ? JL.noMyPosts : JL.noJob}</h3>
+      ${!isMyPosts ? `<p>${JL.noJobSub}</p>
+        <a href="/chat" class="btn btn-primary" style="margin-top:16px">${JL.aiChat}</a>` : ''}
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = jobs.map(j => {
+    const isOwn = myPostedIds.has(j.id);
+    const ownBadge = isOwn
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;
+           border-radius:100px;background:var(--saffron-pale);color:#92400E;
+           font-size:.68rem;font-weight:700;margin-left:6px">${JL.postedByYou}</span>`
+      : '';
+    // Inject badge into buildJobCard output
+    const card = buildJobCard(j);
+    return isOwn ? card.replace(
+      'class="job-card-title"',
+      'class="job-card-title" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"'
+    ).replace(
+      `>${KM.esc(j.title)}</div>`,
+      `>${KM.esc(j.title)}${ownBadge}</div>`
+    ) : card;
+  }).join('');
+  KM.initFadeUp();
+}
+
+function filterType(btn, type) {
+  curType = type;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type !== 'mine') document.getElementById('type-select').value = type;
+  applyFilters();
+}
+
+function doSearch() {
+  curType = document.getElementById('type-select').value;
+  document.querySelectorAll('.ftab').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === curType));
+  applyFilters();
+}
+
+function applyFilters() {
+  const q = document.getElementById('q-input').value.toLowerCase();
+  let filtered = allJobs.filter(j => {
+    if (curType === 'mine') return myPostedIds.has(j.id);
+    const matchType = !curType || j.job_type === curType;
+    const matchQ    = !q ||
+      j.title.toLowerCase().includes(q) ||
+      (j.skill_required || '').toLowerCase().includes(q) ||
+      (j.location || '').toLowerCase().includes(q);
+    return matchType && matchQ;
+  });
+  sortAndRender(filtered);
+}
+
+function sortJobs() { applyFilters(); }
+
+function sortAndRender(jobs) {
+  const sel = document.getElementById('sort-sel').value;
+  const sorted = [...jobs].sort((a, b) =>
+    sel === 'salary' ? b.salary - a.salary : b.id - a.id
+  );
+  renderJobs(sorted);
+}
+
+document.getElementById('q-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+loadJobs();
+</script>
+{% endblock %}

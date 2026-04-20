@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Chat{% endblock %}
+
+{% block head %}
+<style>
+body { background: #EDE8E0; }
+
+.chat-shell {
+  height: calc(100vh - 62px);
+  max-width: 760px; margin: 0 auto;
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+
+/* ── Top info bar ───────────────────────────────────────────── */
+.chat-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.chat-header .avatar { background: linear-gradient(135deg,var(--clay),var(--saffron)); }
+.chat-header-info { flex: 1; }
+.chat-phone { font-weight: 700; font-size: .88rem; }
+.chat-skill { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+.chat-status {
+  display: flex; align-items: center; gap: 6px;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--forest);
+  animation: pulse-dot 2s ease infinite;
+}
+@keyframes pulse-dot {
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.4);opacity:.7}
+}
+.status-txt { font-size: .72rem; color: var(--forest); font-weight: 600; }
+.header-actions { display: flex; gap: 8px; }
+.hdr-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .9rem; transition: all .15s;
+}
+.hdr-btn:hover { background: var(--clay-pale); border-color: var(--clay); }
+
+/* ── Messages ───────────────────────────────────────────────── */
+.messages {
+  flex: 1; overflow-y: auto; padding: 20px 18px;
+  display: flex; flex-direction: column; gap: 18px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Timestamps */
+.msg-time {
+  text-align: center; font-size: .67rem; color: var(--muted);
+  margin: 4px 0;
+}
+
+/* Rows */
+.msg-row { display: flex; gap: 10px; max-width: 82%; align-items: flex-end; }
+.msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-row.bot  { align-self: flex-start; }
+
+.bot-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,var(--clay),var(--clay-light));
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem;
+}
+
+/* Bubbles */
+.bubble {
+  padding: 13px 16px; border-radius: 18px; line-height: 1.6;
+  font-size: .88rem; max-width: 100%; word-break: break-word;
+  box-shadow: var(--shadow-sm);
+  animation: bubble-in .25s var(--ease-back) both;
+}
+@keyframes bubble-in {
+  from { opacity:0; transform:scale(.92) translateY(6px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.msg-row.bot  .bubble { background: var(--white); border-bottom-left-radius: 5px; }
+.msg-row.user .bubble {
+  background: var(--clay); color: #fff; border-bottom-right-radius: 5px;
+}
+
+/* Typing */
+.typing-bubble { padding: 14px 18px !important; }
+.typing-dots { display: flex; gap: 5px; align-items: center; height: 14px; }
+.typing-dots span {
+  width: 7px; height: 7px; background: var(--muted); border-radius: 50%;
+  animation: td .9s ease infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .18s; }
+.typing-dots span:nth-child(3) { animation-delay: .36s; }
+@keyframes td { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+
+/* Chips row */
+.chips-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 4px 0; margin-left: 42px;
+  animation: bubble-in .3s var(--ease-back) both;
+}
+
+/* Job cards in chat */
+.chat-jobs-list {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-left: 42px; width: calc(100% - 42px);
+  max-width: 480px;
+  animation: bubble-in .3s var(--ease-back) .1s both;
+}
+.chat-job {
+  background: var(--white); border-radius: 16px;
+  padding: 16px 18px; border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 14px;
+  transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.chat-job::before {
+  content: ''; position: absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:3px 0 0 3px; background:var(--clay);
+}
+.chat-job.skilled::before { background: var(--forest); }
+.chat-job:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.cj-info { flex: 1; min-width:0; }
+.cj-title { font-weight: 700; font-size: .85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cj-meta  { font-size: .71rem; color: var(--muted); margin-top: 3px; display:flex;gap:10px;flex-wrap:wrap; }
+.cj-salary { font-family: var(--font-display); font-weight: 900; color: var(--forest); font-size: .9rem; white-space:nowrap; }
+
+/* ── Input bar ───────────────────────────────────────────────── */
+.input-bar {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 14px 18px 18px;
+  box-shadow: 0 -4px 20px rgba(44,26,14,.06);
+  flex-shrink: 0;
+}
+.input-row {
+  display: flex; align-items: flex-end; gap: 10px;
+  background: var(--sand); border-radius: 16px;
+  padding: 8px 8px 8px 16px;
+  border: 1.5px solid var(--border);
+  transition: border-color .15s, box-shadow .15s;
+}
+.input-row:focus-within {
+  border-color: var(--clay);
+  box-shadow: 0 0 0 3px rgba(193,68,14,.10);
+}
+#chat-in {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-family: var(--font-body); font-size: .9rem; color: var(--text);
+  resize: none; max-height: 110px; line-height: 1.5;
+  padding: 4px 0;
+}
+.mic-btn, .send-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 1rem; transition: all .15s;
+}
+.mic-btn {
+  background: var(--sand-dark); color: var(--muted);
+  border: 1.5px solid var(--border);
+}
+.mic-btn:hover { background: var(--clay-pale); color: var(--clay); border-color:var(--clay); }
+.mic-btn.listening {
+  background: #FFE4E1; color: #DC2626;
+  border-color: #DC2626; animation: mic-pulse 1s ease infinite;
+}
+@keyframes mic-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.send-btn {
+  background: var(--clay); color: #fff;
+  box-shadow: 0 3px 10px rgba(193,68,14,.3);
+}
+.send-btn:hover { background: var(--clay-light); }
+.send-btn:active { transform: scale(.92); }
+.input-hint {
+  font-size: .68rem; color: var(--muted); text-align: center; margin-top: 8px;
+}
+
+/* TTS toggle */
+.tts-toggle {
+  position: absolute; right: 8px; top: 8px;
+  background: var(--sand); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 10px; font-size: .68rem;
+  color: var(--muted); cursor: pointer; font-family: var(--font-body);
+  font-weight: 600;
+}
+
+@media (max-width:600px) {
+  .chat-shell { height: calc(100dvh - 62px); }
+  .messages { padding: 14px 12px; }
+  .msg-row { max-width: 90%; }
+  .chat-jobs-list { margin-left: 0; width: 100%; }
+  .chips-row { margin-left: 0; }
+  .input-bar { padding: 10px 12px 14px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-shell">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="avatar">🤖</div>
+    <div class="chat-header-info">
+      <div class="chat-phone" id="hdr-phone">+91 ...</div>
+      <div class="chat-skill" id="hdr-skill">AI Assistant</div>
+    </div>
+    <div class="chat-status">
+      <div class="status-dot"></div>
+      <span class="status-txt">Online</span>
+    </div>
+    <div class="header-actions">
+      <button class="hdr-btn" id="tts-btn" title="Toggle voice" onclick="toggleTTS()">🔊</button>
+      <button class="hdr-btn" title="Voice Mode" onclick="startVoiceMode()" id="voice-mode-btn">🎙️</button>
+      <button class="hdr-btn" title="Text Mode"  onclick="startTextMode()"  id="text-mode-btn">⌨️</button>
+      <button class="hdr-btn" onclick="startDemo()" title="Live Demo for Judges"
+        style="background:linear-gradient(135deg,var(--clay),var(--saffron));color:#fff;border:none;font-size:.68rem;font-weight:800;width:auto;padding:0 12px;letter-spacing:.5px;border-radius:10px">
+        ▶ DEMO
+      </button>
+      <button class="hdr-btn" title="Reset chat" onclick="resetChat()">🔄</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="msgs"></div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <div class="input-row">
+      <textarea id="chat-in" rows="1"
+        placeholder="Kuch bolo ya likho..."></textarea>
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Voice input">🎤</button>
+      <button class="send-btn" onclick="sendMsg()" title="Send">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint" id="input-hint">↑ Enter to send · Shift+Enter new line · 🎤 voice</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const PHONE = '{{ phone }}';
+let ttsEnabled = true;
+let micActive   = false;
+let recognition = null;
+let curLang     = KM.getLang() || 'hi';
+let msgCount    = 0;
+
+const CHAT_L = {
+  hi: {
+    placeholder: 'Kuch bolo ya likho... (e.g. "mujhe kaam chahiye")',
+    hint: 'Enter se bhejein · Shift+Enter nayi line · 🎤 voice input',
+    online: 'Online — AI Ready',
+    chips_idle:  ['⚡ Aaj kaam chahiye','🧠 Skill job chahiye','👷 Worker chahiye','❓ Help'],
+    chips_jobs:  ['🔄 Aur jobs dikhao', '📊 Mera profile', '📝 Job post karo'],
+    chips_level: ['🌱 Beginner','⚙️ Intermediate','🏆 Expert'],
+    greeting: '🙏 Namaste! Main hun **KaamMitr AI** — aapka rozgaar saathi.\n\nMain aapki madad kar sakta hun:\n\n⚡ **Instant Kaam** — aaj hi ₹500+ kamao\n🧠 **Skill Job** — apni skill ke hisab se permanent kaam\n🏢 **Worker Hire** — employer hain? worker dhundho\n\nBas bolo — **"kaam chahiye"** ya apni skill batao! 👇'
+  },
+  en: {
+    placeholder: 'Type or speak... (e.g. "I need work today")',
+    hint: 'Enter to send · Shift+Enter new line · 🎤 voice input',
+    online: 'Online — AI Ready',
+    chips_idle:  ['⚡ Need work today','🧠 Skill-based job','👷 Need a worker','❓ Help'],
+    chips_jobs:  ['🔄 Show more jobs', '📊 My profile', '📝 Post a job'],
+    chips_level: ['🌱 Beginner','⚙️ Intermediate','🏆 Expert'],
+    greeting: '👋 Hello! I am **KaamMitr AI** — your employment assistant.\n\nI can help you with:\n\n⚡ **Instant Work** — earn ₹500+ today\n🧠 **Skill Jobs** — permanent work matching your skill\n🏢 **Hire Workers** — find the right worker fast\n\nJust say — **"need work"** or tell me your skill! 👇'
+  },
+  te: {
+    placeholder: 'టైప్ చేయండి లేదా మాట్లాడండి... (e.g. "నాకు పని కావాలి")',
+    hint: 'Enter తో పంపండి · 🎤 వాయిస్ ఇన్పుట్',
+    online: 'Online — AI సిద్ధంగా ఉంది',
+    chips_idle:  ['⚡ ఈరోజు పని కావాలి','🧠 నైపుణ్య ఉద్యోగం','👷 కార్మికుడు కావాలి','❓ సహాయం'],
+    chips_jobs:  ['🔄 ఇంకా ఉద్యోగాలు', '📊 నా ప్రొఫైల్', '📝 ఉద్యోగం పోస్ట్'],
+    chips_level: ['🌱 Beginner','⚙️ Intermediate','🏆 Expert'],
+    greeting: '🙏 నమస్కారం! నేను **KaamMitr AI** — మీ ఉపాధి సహాయకుడు.\n\nనేను సహాయం చేయగలను:\n\n⚡ **తక్షణ పని** — ఈరోజే ₹500+ సంపాదించండి\n🧠 **నైపుణ్య ఉద్యోగం** — శాశ్వత పని\n🏢 **కార్మికుడు కావాలి** — employer అయితే\n\nచెప్పండి — **"పని కావాలి"** లేదా మీ నైపుణ్యం చెప్పండి! 👇'
+  }
+};
+const CL = CHAT_L[curLang] || CHAT_L.hi;
+
+document.getElementById('chat-in').placeholder    = CL.placeholder;
+document.getElementById('input-hint').textContent = CL.hint;
+document.querySelector('.status-txt').textContent = CL.online;
+
+// ── Boot ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!PHONE) { window.location.href='/'; return; }
+  KM.setPhone(PHONE);
+  await loadProfile();
+
+  const params = new URLSearchParams(window.location.search);
+  const mode   = params.get('mode');
+
+  if (mode === 'instant') {
+    await loadJobsDirect('instant');
+  } else if (mode === 'skilled') {
+    await loadJobsDirect('skilled');
+  } else {
+    addBotMsg(greeting());
+    addChips('ASKING_MODE', 'unknown');
+  }
+
+  setupMic();
+  autoResize();
+
+  // Auto-start voice mode if user came from mode button
+  if (mode === 'instant' || mode === 'skilled') {
+    setTimeout(() => {
+      ttsEnabled = true;
+      document.getElementById('tts-btn').textContent = '🔊';
+      showVoicePrompt();
+    }, 800);
+  }
+});
+
+// ── Profile ──────────────────────────────────────────────────────
+async function loadJobsDirect(mode) {
+  const isInstant = (mode === 'instant');
+  const msgs = { hi: isInstant
+    ? '⚡ Instant kaam ke options! 1 se 8 ghante ka kaam, per ghante payment.'
+    : '💼 Monthly job ke options! ₹4,000 se ₹9,000 per mahine, permanent kaam.',
+    en: isInstant
+    ? '⚡ Instant work options! 1 to 8 hours, paid per hour.'
+    : '💼 Monthly job options! ₹4,000 to ₹9,000 per month, permanent work.',
+    te: isInstant
+    ? '⚡ తక్షణ పని విక్కల్యాలు! 1 నుండి 8 గంటలు, గంటకు చెల్లింపు.'
+    : '💼 నెలవారీ ఉద్యోగ విక్కల్యాలు! ₹4,000 నుండి ₹9,000 నెలకు, శాశ్వత పని.' };
+  addBotMsg(msgs[curLang] || msgs.en);
+
+  const endpoint = isInstant ? '/api/jobs/instant' : '/api/jobs/skilled';
+  const r = await KM.api('GET', endpoint);
+  if (r.success && r.data && r.data.length) {
+    addJobs(r.data);
+    addChips('INSTANT_JOBS', 'find_work');
+  } else {
+    const noMsg = { hi: 'Abhi koi job available nahi. Thodi der baad try karein.',
+                    en: 'No jobs available right now. Try again later.',
+                    te: 'ఇప్పుడు ఉద్యోగాలు లేవు. తర్వాత ప్రయత్నించండి.' };
+    addBotMsg(noMsg[curLang] || noMsg.en);
+  }
+}
+
+async function loadProfile() {
+  const r = await KM.api('GET', `/api/user/profile?phone=${PHONE}`);
+  if (r.success && r.data) {
+    const u = r.data;
+    // Respect localStorage language selection over DB — user explicitly chose it
+    const savedLang = localStorage.getItem('km_lang');
+    curLang = savedLang || u.language || 'hi';
+    document.getElementById('hdr-phone').textContent = '+' + u.phone;
+    if (u.skill) document.getElementById('hdr-skill').textContent =
+      `🛠 ${KM.cap(u.skill)} · ${KM.cap(u.skill_level||'beginner')} · ⭐${Math.round(u.trust_score||50)}`;
+  }
+}
+
+// ── Send ─────────────────────────────────────────────────────────
+async function sendMsg() {
+  const ta = document.getElementById('chat-in');
+  const t  = ta.value.trim(); if(!t) return;
+  ta.value = ''; ta.style.height='auto';
+  await process(t, false);
+}
+
+async function process(text, silent) {
+  if (!silent) addUserMsg(text);
+  const tid = addTyping();
+  let timeoutId = setTimeout(() => {
+    addBotMsg('⏳ Thoda time lag raha hai... please wait / Taking a moment...');
+  }, 5000);
+  const r = await KM.api('POST', '/api/ai/process', { phone:PHONE, text });
+  clearTimeout(timeoutId);
+  removeTyping(tid);
+  if (!r.success || !r.data) { addBotMsg('Thoda network problem. Dobara try karein 🔄'); return; }
+  const d = r.data;
+  curLang = d.language || curLang;
+  if (d.response_text) addBotMsg(d.response_text);
+  if (d.jobs?.length)  addJobs(d.jobs);
+  addChips(d.state, d.intent);
+  if (d.user?.skill) {
+    const sk = d.user.skill;
+    const lv = d.user.skill_level||'beginner';
+    document.getElementById('hdr-skill').textContent =
+      `🛠 ${KM.cap(sk)} · ${KM.cap(lv)} · ⭐${Math.round(d.user.trust_score||50)}`;
+  }
+  scrollBottom();
+  // Auto-restart mic after bot responds (voice-first: no jobs shown yet, not in confirm flow)
+  if (ttsEnabled && !d.jobs?.length && !pendingJobConfirm) {
+    const ttsDelay = Math.min((d.response_text||'').length * 55 + 800, 6000);
+    setTimeout(() => { if (!micActive) startMic(); }, ttsDelay);
+  }
+}
+
+// ── DOM builders ─────────────────────────────────────────────────
+function addUserMsg(txt) {
+  const el = document.createElement('div');
+  el.className = 'msg-row user';
+  el.innerHTML = `<div class="bubble">${KM.esc(txt)}</div>`;
+  document.getElementById('msgs').appendChild(el);
+  scrollBottom();
+}
+
+function addBotMsg(txt) {
+  const el = document.createElement('div');
+  el.className = 'msg-row bot';
+  el.innerHTML = `
+    <div class="bot-avatar">🤖</div>
+    <div class="bubble">${fmt(txt)}</div>`;
+  document.getElementById('msgs').appendChild(el);
+  scrollBottom();
+  if (ttsEnabled) TTS.speak(txt, curLang);
+}
+
+function addTyping() {
+  const id = 'ty-' + (++msgCount);
+  const el = document.createElement('div');
+  el.className = 'msg-row bot'; el.id = id;
+  el.innerHTML = `
+    <div class="bot-avatar">🤖</div>
+    <div class="bubble typing-bubble">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>`;
+  document.getElementById('msgs').appendChild(el);
+  scrollBottom(); return id;
+}
+
+function removeTyping(id) {
+  document.getElementById(id)?.remove();
+}
+
+function addJobs(jobs) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-jobs-list';
+  const applyLbl = {'hi':'Apply Karein','en':'Apply Now','te':'దరఖాస్తు చేయండి'}[curLang]||'Apply';
+  wrap.innerHTML = jobs.slice(0,5).map(j => `
+    <div class="chat-job ${j.job_type==='skilled'?'skilled':''}">
+      <div class="cj-info">
+        <div class="cj-title">${KM.esc(j.title)}</div>
+        <div class="cj-meta">
+          <span>📍 ${KM.esc(j.location||'Nearby')}</span>
+          <span>⏱ ${KM.esc(j.duration||'—')}</span>
+          ${j.skill_required?`<span>🛠 ${KM.esc(j.skill_required)}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="cj-salary">${KM.currency(j.salary)}<span style="font-family:var(--font-body);font-size:.68rem;color:var(--muted);font-weight:400">/${j.salary_unit}</span></div>
+        <button class="btn btn-success btn-sm" id="jbtn-${j.id}"
+                onclick="triggerJobConfirm(${j.id},'${KM.esc(j.title).replace(/'/g,'')}','${KM.esc(j.location||'').replace(/'/g,'')}','${KM.currency(j.salary)}/${j.salary_unit}','${KM.esc(j.duration||'').replace(/'/g,'')}')"
+        >${applyLbl}</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('msgs').appendChild(wrap);
+  scrollBottom();
+
+  // Auto-announce first job via voice
+  if (ttsEnabled && jobs.length > 0) {
+    const j = jobs[0];
+    const announcements = {
+      hi: `${jobs.length} kaam mile hain. Pehla option: ${j.title}, ${j.location||'paas mein'}, ${j.salary} rupaye per ${j.salary_unit}, ${j.duration||''}. Apply karne ke liye Apply Karein button dabayein ya haan bolein.`,
+      en: `Found ${jobs.length} jobs. First option: ${j.title}, at ${j.location||'nearby'}, ${j.salary} rupees per ${j.salary_unit}, ${j.duration||''}. Tap Apply or say yes to apply.`,
+      te: `${jobs.length} పనులు దొరికాయి. మొదటి option: ${j.title}, ${j.location||'దగ్గర'}, ${j.salary} రూపాయలు per ${j.salary_unit}, ${j.duration||''}. Apply చేయడానికి Apply నొక్కండి లేదా అవును అనండి.`
+    };
+    setTimeout(() => TTS.speak(announcements[curLang] || announcements.hi, curLang), 600);
+  }
+}
+
+function triggerJobConfirm(jobId, jobTitle, location, salary, duration) {
+  const details = {
+    hi: `📍 Location: ${location}\n💰 Payment: ${salary}\n⏱ Duration: ${duration}`,
+    en: `📍 Location: ${location}\n💰 Payment: ${salary}\n⏱ Duration: ${duration}`,
+    te: `📍 స్థానం: ${location}\n💰 చెల్లింపు: ${salary}\n⏱ వ్యవధి: ${duration}`
+  }[curLang] || `📍 ${location} | 💰 ${salary} | ⏱ ${duration}`;
+
+  // Store for voice confirm
+  pendingJobConfirm = { jobId, jobTitle };
+
+  const msgs = {
+    hi: `Kya aap **${jobTitle}** ke liye apply karna chahte hain?\n\n${details}\n\n🎤 **"Haan"** bolein apply ke liye ya button dabayein.`,
+    en: `Do you want to apply for **${jobTitle}**?\n\n${details}\n\n🎤 Say **"Yes"** to apply or tap the button.`,
+    te: `**${jobTitle}** కి apply చేయాలా?\n\n${details}\n\n🎤 **"అవును"** అనండి apply కి.`
+  };
+  addBotMsg(msgs[curLang] || msgs.hi);
+
+  // Show confirm/cancel buttons
+  const row = document.createElement('div');
+  row.className = 'chips-row';
+  const yesLbl = {hi:'✅ Haan, Apply Karo', en:'✅ Yes, Apply', te:'✅ అవును, Apply చేయి'}[curLang]||'✅ Yes';
+  const noLbl  = {hi:'❌ Nahi, Aur Dekho', en:'❌ No, Show More', te:'❌ వద్దు, మరిన్ని చూపు'}[curLang]||'❌ No';
+  row.innerHTML = `
+    <button class="chip" style="background:var(--forest);color:#fff;border-color:var(--forest)" onclick="confirmApply(${jobId},'${jobTitle.replace(/'/g,'')}')">${yesLbl}</button>
+    <button class="chip" onclick="cancelApply()">${noLbl}</button>`;
+  document.getElementById('msgs').appendChild(row);
+  scrollBottom();
+
+  // Auto-start mic for voice answer
+  const delay = ttsEnabled ? 3000 : 600;
+  setTimeout(() => startMic(), delay);
+}
+
+function confirmApply(jobId, jobTitle) {
+  pendingJobConfirm = null;
+  window.applyJobDirect(jobId, jobTitle);
+}
+
+function cancelApply() {
+  pendingJobConfirm = null;
+  const noMsgs = { hi: 'Theek hai! Koi aur skill batao ya aur jobs dekhne ke liye bolein.', en: 'Okay! Tell me another skill or ask to see more jobs.', te: 'సరే! మరో నైపుణ్యం చెప్పండి లేదా మరిన్ని jobs అడగండి.' };
+  addBotMsg(noMsgs[curLang] || noMsgs.hi);
+  setTimeout(() => startMic(), 1200);
+}
+
+function addChips(state, intent) {
+  let options = [];
+  if (state==='INSTANT_JOBS' || state==='SHOWING_JOBS')
+    options = CL.chips_jobs;
+  else if (state==='ASKING_SKILL')
+    options = ['Electrician','Plumber','Carpenter','Driver','Mason','Welder'];
+  else if (state==='ASKING_LEVEL')
+    options = CL.chips_level;
+  else if (['IDLE','ASKING_MODE','HELPING'].includes(state))
+    options = CL.chips_idle;
+
+  if (!options.length) return;
+  const row = document.createElement('div');
+  row.className = 'chips-row';
+  row.innerHTML = options.map(o =>
+    `<button class="chip" onclick="process('${KM.esc(o)}',false)">${KM.esc(o)}</button>`
+  ).join('');
+  document.getElementById('msgs').appendChild(row);
+  scrollBottom();
+}
+
+// ── Format text ───────────────────────────────────────────────────
+function fmt(t) {
+  return KM.esc(t)
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>');
+}
+
+function scrollBottom() {
+  const m = document.getElementById('msgs');
+  requestAnimationFrame(() => m.scrollTop = m.scrollHeight + 999);
+}
+
+// ── TTS toggle ────────────────────────────────────────────────────
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const b = document.getElementById('tts-btn');
+  b.textContent = ttsEnabled ? '🔊' : '🔇';
+  KM.toast(ttsEnabled ? 'Voice on':'Voice off');
+  if (!ttsEnabled) TTS.stop();
+}
+
+function startVoiceMode() {
+  // Voice only: enable TTS, hide text input, auto-trigger mic
+  ttsEnabled = true;
+  document.getElementById('tts-btn').textContent = '🔊';
+  document.querySelector('.input-bar').style.display = 'none';
+  document.getElementById('voice-mode-btn').style.opacity = '1';
+  document.getElementById('text-mode-btn').style.opacity = '.4';
+  KM.toast('🎙️ Voice Mode — speak to KaamMitr', 'info');
+  // Show floating mic
+  let floatMic = document.getElementById('float-mic');
+  if (!floatMic) {
+    floatMic = document.createElement('button');
+    floatMic.id = 'float-mic';
+    floatMic.textContent = '🎤';
+    floatMic.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);font-size:2.5rem;background:var(--clay);color:#fff;border:none;border-radius:50%;width:72px;height:72px;cursor:pointer;box-shadow:var(--shadow-lg);z-index:100';
+    floatMic.onclick = () => toggleMic();
+    document.body.appendChild(floatMic);
+  }
+  floatMic.style.display = 'flex';
+  floatMic.style.alignItems = 'center';
+  floatMic.style.justifyContent = 'center';
+}
+
+function startTextMode() {
+  // Text only: disable TTS, show input, hide float mic
+  ttsEnabled = false;
+  document.getElementById('tts-btn').textContent = '🔇';
+  document.querySelector('.input-bar').style.display = '';
+  document.getElementById('voice-mode-btn').style.opacity = '.4';
+  document.getElementById('text-mode-btn').style.opacity = '1';
+  const floatMic = document.getElementById('float-mic');
+  if (floatMic) floatMic.style.display = 'none';
+  KM.toast('⌨️ Text Mode — type to chat', 'info');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────
+async function resetChat() {
+  await KM.api('POST', '/api/user/reset-conversation', { phone: PHONE });
+  document.getElementById('msgs').innerHTML = '';
+  addBotMsg(greeting());
+  KM.toast('Chat reset ho gaya!');
+}
+
+// ── Voice Prompt Bar ─────────────────────────────────────────────
+function showVoicePrompt() {
+  let bar = document.getElementById('voice-prompt-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'voice-prompt-bar';
+    bar.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(193,68,14,.95);color:#fff;padding:10px 22px;border-radius:100px;font-size:.82rem;font-weight:700;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.2);pointer-events:none;transition:opacity .3s';
+    document.body.appendChild(bar);
+  }
+  const msgs = { hi: '🎤 Mic se bolein — apni skill batayein', en: '🎤 Speak — tell your skill', te: '🎤 మాట్లాడండి — మీ నైపుణ్యం చెప్పండి' };
+  bar.textContent = msgs[curLang] || msgs.hi;
+  bar.style.opacity = '1';
+  setTimeout(() => { bar.style.opacity = '0'; }, 4000);
+}
+
+// ── Mic ───────────────────────────────────────────────────────────
+function setupMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('mic-btn').style.opacity='.35'; return; }
+  recognition = new SR();
+  recognition.continuous=false; recognition.interimResults=false;
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('chat-in').value = t;
+    stopMic();
+    // If waiting for job confirmation, handle it directly
+    if (pendingJobConfirm) {
+      handleVoiceConfirm(t);
+    } else {
+      process(t, false);
+    }
+  };
+  recognition.onerror = () => stopMic();
+  recognition.onend   = () => { if (micActive) stopMic(); };
+}
+
+function toggleMic() {
+  if (micActive) stopMic(); else startMic();
+}
+function startMic() {
+  if (!recognition) return;
+  const langMap = { hi: 'hi-IN', en: 'en-IN', te: 'te-IN' };
+  recognition.lang = langMap[curLang] || 'hi-IN';
+  try { recognition.start(); } catch(e) { return; }
+  micActive = true;
+  document.getElementById('mic-btn').classList.add('listening');
+  document.getElementById('mic-btn').textContent = '🔴';
+  showVoicePrompt();
+}
+function stopMic() {
+  try { if (recognition && micActive) recognition.stop(); } catch(e) {}
+  micActive = false;
+  const b = document.getElementById('mic-btn');
+  b.classList.remove('listening'); b.textContent = '🎤';
+}
+
+// ── Auto-resize textarea ──────────────────────────────────────────
+function autoResize() {
+  const ta = document.getElementById('chat-in');
+  ta.addEventListener('input', () => {
+    ta.style.height='auto';
+    ta.style.height=Math.min(ta.scrollHeight,110)+'px';
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
+}
+
+// ── Static greetings ──────────────────────────────────────────────
+function greeting() {
+  return CL.greeting;
+}
+
+// ── Voice Confirmation Flow ───────────────────────────────────────
+let pendingJobConfirm = null; // { jobId, jobTitle }
+
+function askJobConfirmVoice(jobId, jobTitle, jobDetails) {
+  pendingJobConfirm = { jobId, jobTitle };
+  const msgs = {
+    hi: `Kya aap **${jobTitle}** ke liye apply karna chahte hain?\n${jobDetails}\n\n🎤 **"Haan"** bolein apply ke liye, ya **"Nahi"** bolein aur job dekhne ke liye.`,
+    en: `Do you want to apply for **${jobTitle}**?\n${jobDetails}\n\n🎤 Say **"Yes"** to apply, or **"No"** to see more jobs.`,
+    te: `**${jobTitle}** కి apply చేయాలా?\n${jobDetails}\n\n🎤 **"అవును"** అనండి apply కి, **"వద్దు"** అనండి మరిన్ని jobs చూడటానికి.`
+  };
+  addBotMsg(msgs[curLang] || msgs.hi);
+  // Auto-start mic after TTS finishes
+  const delay = ttsEnabled ? 3500 : 800;
+  setTimeout(() => startMic(), delay);
+}
+
+function handleVoiceConfirm(speech) {
+  const pending = pendingJobConfirm;
+  pendingJobConfirm = null;
+  const s = speech.toLowerCase();
+  const yes = ['haan','ha','yes','ok','theek','bilkul','zaroor','apply','haa','han','acha','accha','avunu','avuna'];
+  const confirmed = yes.some(w => s.includes(w));
+  if (confirmed && pending) {
+    window.applyJobDirect(pending.jobId, pending.jobTitle);
+  } else {
+    const noMsgs = { hi: 'Theek hai! Koi aur job dekhna chahte hain? Apni skill batayein.', en: 'Okay! Want to see more jobs? Tell me your skill.', te: 'సరే! మరిన్ని jobs చూడాలా? మీ నైపుణ్యం చెప్పండి.' };
+    addBotMsg(noMsgs[curLang] || noMsgs.hi);
+    setTimeout(() => startMic(), 1500);
+  }
+}
+
+// Override applyJob to use voice confirm flow
+const _origApplyJob = applyJob;
+window.applyJobDirect = async function(jobId, jobTitle) {
+  // Called after voice confirmation
+  const phone = KM.getPhone();
+  const lang  = KM.getLang() || 'hi';
+  const btn = document.getElementById(`jbtn-${jobId}`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="km-spin"></span>'; }
+  const res = await KM.api('POST', `/api/jobs/${jobId}/apply`, { phone }, 1);
+  if (res.success) {
+    const d = res.data || {};
+    const AL = { hi: { submitted: 'Application Submit Ho Gayi!', contact: 'Employer jald hi aapse contact karega. Dhanyavaad!', track: 'Track Karein' }, en: { submitted: 'Application Submitted!', contact: 'Employer will contact you soon. Thank you!', track: 'Track Application' }, te: { submitted: 'దరఖాస్తు సమర్పించబడింది!', contact: 'యజమాని త్వరలో సంప్రదిస్తారు. ధన్యవాదాలు!', track: 'ట్రాక్ చేయండి' } }[lang] || { submitted: 'Application Submitted!', contact: 'Employer will contact you soon.', track: 'Track' };
+    const card = document.createElement('div');
+    card.className = 'msg-row bot';
+    card.innerHTML = `
+      <div class="bot-avatar">🤖</div>
+      <div style="flex:1;max-width:420px">
+        <div style="background:var(--forest-pale);border:2px solid var(--forest);border-radius:18px;padding:18px 20px;animation:bubble-in .3s var(--ease-back) both">
+          <div style="font-weight:900;font-size:1rem;color:var(--forest);margin-bottom:12px">✅ ${AL.submitted}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem">
+            <div>📋 <strong>${KM.esc(d.job_title||'')}</strong></div>
+            <div>📍 ${KM.esc(d.job_location||'')}</div>
+            <div>💰 ${KM.currency(d.job_salary||0)} / ${d.job_salary_unit||'day'}</div>
+            <div>⏱ ${KM.esc(d.job_duration||'')}</div>
+            <div style="margin-top:6px;padding:8px 12px;background:var(--white);border-radius:10px;font-family:monospace;font-size:.85rem;color:var(--clay);font-weight:700">🆔 ${d.application_id||''}</div>
+          </div>
+          <div style="margin-top:12px;font-size:.75rem;color:var(--muted)">${AL.contact}</div>
+          <a href="/profile?phone=${phone}" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:8px 16px;background:var(--forest);color:#fff;border-radius:10px;font-size:.78rem;font-weight:700;text-decoration:none">📊 ${AL.track}</a>
+        </div>
+      </div>`;
+    document.getElementById('msgs').appendChild(card);
+    scrollBottom();
+    if (ttsEnabled) TTS.speak(`${AL.submitted} Application ID ${d.application_id||''}. ${AL.contact}`, lang);
+    if (btn) { btn.innerHTML = '✓'; btn.style.background = 'var(--forest)'; }
+  } else {
+    KM.toast(res.message || 'Apply nahi ho saka', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Apply'; }
+  }
+};
+
+// ── DEMO MODE — scripted flow for judges ─────────────────────────
+const DEMO_SCRIPTS = {
+  hi: [
+    { role: 'user', text: 'Namaste, mujhe aaj kaam chahiye' },
+    { role: 'user', text: 'electrician' },
+    { role: 'user', text: 'intermediate, 3 saal ka experience hai' },
+    { role: 'user', text: 'MCB trip hone par pehle main switch off karta hun, phir fault dhundta hun' },
+    { role: 'user', text: 'pehli job pe apply karo' },
+  ],
+  en: [
+    { role: 'user', text: 'Hello, I need work today' },
+    { role: 'user', text: 'electrician' },
+    { role: 'user', text: 'intermediate, 3 years experience' },
+    { role: 'user', text: 'First I switch off the MCB, then find the fault in the circuit' },
+    { role: 'user', text: 'apply to first job' },
+  ],
+  te: [
+    { role: 'user', text: 'నమస్కారం, నాకు ఈరోజు పని కావాలి' },
+    { role: 'user', text: 'electrician' },
+    { role: 'user', text: 'intermediate, 3 సంవత్సరాల అనుభవం' },
+    { role: 'user', text: 'MCB trip అయినప్పుడు ముందు switch off చేస్తాను, తర్వాత fault వెతుకుతాను' },
+    { role: 'user', text: 'మొదటి job కి apply చేయండి' },
+  ]
+};
+
+async function startDemo() {
+  // Reset first
+  await KM.api('POST', '/api/user/reset-conversation', { phone: PHONE });
+  document.getElementById('msgs').innerHTML = '';
+
+  const script = DEMO_SCRIPTS[curLang] || DEMO_SCRIPTS.hi;
+  const demoLabel = { hi: '🎬 Demo Mode — Judges ke liye live demo shuru ho raha hai...', en: '🎬 Demo Mode — Starting live demo for judges...', te: '🎬 Demo Mode — Judges కోసం live demo ప్రారంభమవుతోంది...' };
+
+  // Show greeting first
+  addBotMsg(greeting());
+  addChips('ASKING_MODE', 'unknown');
+  KM.toast(demoLabel[curLang] || demoLabel.en, 'info', 4000);
+
+  // Play each step with delay
+  let delay = 1800;
+  for (const step of script) {
+    await new Promise(r => setTimeout(r, delay));
+    const ta = document.getElementById('chat-in');
+    // Type animation
+    ta.value = '';
+    for (const ch of step.text) {
+      ta.value += ch;
+      await new Promise(r => setTimeout(r, 28));
+    }
+    await new Promise(r => setTimeout(r, 400));
+    await sendMsg();
+    delay = 2800;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Employer Login{% endblock %}
+{% block head %}
+<style>
+html, body { height: 100%; }
+.login-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, #E8F5EE 0%, #F0FDF4 60%, #FDF0E8 100%);
+  padding: 20px; position: relative;
+}
+.login-screen::before {
+  content: ''; position: absolute;
+  width: 400px; height: 400px; border-radius: 50%;
+  background: rgba(30,107,69,.05); top: -100px; left: -100px; pointer-events: none;
+}
+.login-card {
+  background: var(--white); border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(30,107,69,.14);
+  padding: 44px 36px 36px; width: 100%; max-width: 440px;
+  position: relative; z-index: 1;
+  animation: card-rise .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes card-rise {
+  from { opacity:0; transform:translateY(30px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.login-logo {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, #1E6B45, #2A8F5C);
+  border-radius: 50% 50% 50% 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; margin: 0 auto 16px;
+  box-shadow: 0 8px 24px rgba(30,107,69,.3);
+  transform: rotate(-8deg);
+}
+.login-header { text-align: center; margin-bottom: 28px; }
+.login-header h2 {
+  font-family: var(--font-display); font-size: 1.6rem;
+  font-weight: 900; color: var(--soil); margin-bottom: 6px;
+}
+.login-header p { font-size: .88rem; color: var(--muted); line-height: 1.5; }
+
+.role-tabs {
+  display: flex; background: var(--sand); border-radius: 14px;
+  padding: 4px; gap: 4px; margin-bottom: 28px;
+}
+.role-tab {
+  flex: 1; padding: 11px; border-radius: 10px; border: none;
+  font-family: var(--font-body); font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: all .2s; color: var(--muted); background: transparent;
+}
+.role-tab.active {
+  background: var(--white); color: var(--forest);
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: .85rem; color: var(--soil); margin-bottom: 8px;
+}
+.field-input {
+  width: 100%; padding: 14px 16px; border-radius: 12px;
+  border: 2px solid var(--border); background: var(--white);
+  font-family: var(--font-body); font-size: .95rem; color: var(--soil);
+  transition: border-color .15s, box-shadow .15s; outline: none;
+}
+.field-input:focus {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(30,107,69,.12);
+}
+.phone-wrap {
+  display: flex; align-items: center;
+  border: 2px solid var(--border); border-radius: 12px;
+  overflow: hidden; background: var(--white);
+  transition: border-color .15s, box-shadow .15s;
+}
+.phone-wrap:focus-within {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(30,107,69,.12);
+}
+.phone-prefix {
+  padding: 0 14px; font-weight: 700; color: var(--muted);
+  font-size: .9rem; border-right: 1px solid var(--border);
+  height: 50px; display: flex; align-items: center;
+  background: var(--sand); white-space: nowrap; flex-shrink: 0;
+}
+.phone-wrap input {
+  flex: 1; border: none; background: transparent; outline: none;
+  padding: 14px 14px; font-size: .95rem; color: var(--soil);
+  font-family: var(--font-body);
+}
+.loc-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--forest-pale); border: 1.5px solid var(--forest);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: .82rem; color: var(--forest); font-weight: 600; min-height: 42px;
+}
+.loc-bar.detecting { background: var(--saffron-pale); border-color: var(--saffron); color: #92400E; }
+.loc-bar.error     { background: #FEE2E2; border-color: #FCA5A5; color: #991B1B; }
+.loc-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--forest); flex-shrink: 0;
+  animation: lp 2s ease infinite;
+}
+.loc-bar.detecting .loc-dot { background: var(--saffron); }
+.loc-bar.error .loc-dot { background: #DC2626; animation: none; }
+@keyframes lp { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.6} }
+
+.login-btn {
+  width: 100%; margin-top: 22px; padding: 16px;
+  font-size: 1rem; font-weight: 700; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--forest), #2A8F5C);
+  color: #fff; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(30,107,69,.35);
+  transition: all .2s; font-family: var(--font-body);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.login-btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(30,107,69,.45); }
+.login-btn:active { transform: scale(.97); }
+.login-btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+
+.divider {
+  text-align: center; margin: 18px 0 0;
+  font-size: .82rem; color: var(--muted);
+}
+.divider a { color: var(--clay); font-weight: 600; text-decoration: none; }
+.divider a:hover { text-decoration: underline; }
+
+#employer-only { transition: all .2s; }
+@media(max-width:480px) { .login-card { padding: 28px 18px 24px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-screen">
+  <div class="login-card">
+
+    <div class="login-header">
+      <div class="login-logo">🏢</div>
+      <h2 id="lbl-title">Employer Portal</h2>
+      <p id="lbl-sub">Jobs post karo, workers dhundho, applications manage karo</p>
+    </div>
+
+    <!-- Role tabs -->
+    <div class="role-tabs">
+      <button class="role-tab active" id="tab-emp" onclick="setRole('employer')">🏢 <span id="lbl-tab-emp">Employer</span></button>
+      <button class="role-tab"        id="tab-wrk" onclick="setRole('worker')">👷 <span id="lbl-tab-wrk">Worker</span></button>
+    </div>
+
+    <!-- Name -->
+    <div class="form-group">
+      <label class="form-label"><span>👤</span><span id="lbl-name">Aapka Naam</span></label>
+      <input class="field-input" id="inp-name" placeholder="Suresh Sharma" autocomplete="name">
+    </div>
+
+    <!-- Company (employer only) -->
+    <div class="form-group" id="employer-only">
+      <label class="form-label"><span>🏭</span><span id="lbl-company">Company / Dukaan ka Naam</span></label>
+      <input class="field-input" id="inp-company" placeholder="e.g. Sharma Constructions">
+    </div>
+
+    <!-- Phone -->
+    <div class="form-group">
+      <label class="form-label"><span>📱</span><span id="lbl-phone">Mobile Number</span> <span style="color:var(--clay);font-size:.8rem">*</span></label>
+      <div class="phone-wrap">
+        <span class="phone-prefix">🇮🇳 +91</span>
+        <input type="tel" id="inp-phone" maxlength="10" placeholder="9876543210" inputmode="numeric">
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="form-group">
+      <label class="form-label"><span>📍</span><span id="lbl-loc">Location</span></label>
+      <div class="loc-bar detecting" id="loc-bar">
+        <div class="loc-dot"></div>
+        <span id="loc-text">Detecting location...</span>
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      <span id="lbl-btn">🏢 Employer Dashboard Kholo</span>
+    </button>
+
+    <div class="divider">
+      <span id="lbl-worker-q">Worker hain?</span> <a href="/login" id="lbl-worker-link">Worker Login karein</a>
+      &nbsp;·&nbsp; <a href="/language">🌐 <span id="lbl-lang">Language</span></a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const _eml = KM.getLang() || 'hi';
+const EMP_L = {
+  hi: {
+    title: 'Employer Portal', sub: 'Jobs post karo, workers dhundho, applications manage karo',
+    tabEmp: 'Employer', tabWrk: 'Worker',
+    name: 'Aapka Naam', namePh: 'Suresh Sharma',
+    company: 'Company / Dukaan ka Naam', companyPh: 'e.g. Sharma Constructions',
+    phone: 'Mobile Number', loc: 'Location',
+    locDetecting: 'Location pata lag rahi hai...', locDone: '📍 ', locErr: 'Location nahi mili',
+    btnEmp: '🏢 Employer Dashboard Kholo', btnWrk: '👷 Worker Dashboard Kholo',
+    loading: '⏳ Loading...',
+    workerQ: 'Worker hain?', workerLink: 'Worker Login karein', lang: 'Language',
+    phoneErr: '10 digit ka mobile number daalo',
+    loginErr: 'Error hua, dobara try karo'
+  },
+  en: {
+    title: 'Employer Portal', sub: 'Post jobs, find workers, manage applications',
+    tabEmp: 'Employer', tabWrk: 'Worker',
+    name: 'Your Name', namePh: 'Suresh Sharma',
+    company: 'Company / Shop Name', companyPh: 'e.g. Sharma Constructions',
+    phone: 'Mobile Number', loc: 'Location',
+    locDetecting: 'Detecting location...', locDone: '📍 ', locErr: 'Location not found',
+    btnEmp: '🏢 Open Employer Dashboard', btnWrk: '👷 Open Worker Dashboard',
+    loading: '⏳ Loading...',
+    workerQ: 'Are you a worker?', workerLink: 'Worker Login', lang: 'Language',
+    phoneErr: 'Enter a 10-digit mobile number',
+    loginErr: 'Error occurred, please try again'
+  },
+  te: {
+    title: 'యజమాని పోర్టల్', sub: 'ఉద్యోగాలు పోస్ట్ చేయండి, కార్మికులను వెతకండి',
+    tabEmp: 'యజమాని', tabWrk: 'కార్మికుడు',
+    name: 'మీ పేరు', namePh: 'సురేష్ శర్మ',
+    company: 'కంపెనీ / దుకాణం పేరు', companyPh: 'e.g. శర్మ కన్స్ట్రక్షన్స్',
+    phone: 'మొబైల్ నంబర్', loc: 'స్థానం',
+    locDetecting: 'స్థానం గుర్తిస్తోంది...', locDone: '📍 ', locErr: 'స్థానం దొరకలేదు',
+    btnEmp: '🏢 యజమాని డాష్‌బోర్డ్ తెరవండి', btnWrk: '👷 కార్మికుడు డాష్‌బోర్డ్ తెరవండి',
+    loading: '⏳ లోడ్ అవుతోంది...',
+    workerQ: 'కార్మికుడా?', workerLink: 'కార్మికుడు లాగిన్', lang: 'భాష',
+    phoneErr: '10 అంకెల మొబైల్ నంబర్ నమోదు చేయండి',
+    loginErr: 'లోపం వచ్చింది, మళ్ళీ ప్రయత్నించండి'
+  }
+};
+const ES = EMP_L[_eml] || EMP_L.en;
+
+// Apply all labels
+document.getElementById('lbl-title').textContent      = ES.title;
+document.getElementById('lbl-sub').textContent        = ES.sub;
+document.getElementById('lbl-tab-emp').textContent    = ES.tabEmp;
+document.getElementById('lbl-tab-wrk').textContent    = ES.tabWrk;
+document.getElementById('lbl-name').textContent       = ES.name;
+document.getElementById('inp-name').placeholder       = ES.namePh;
+document.getElementById('lbl-company').textContent    = ES.company;
+document.getElementById('inp-company').placeholder    = ES.companyPh;
+document.getElementById('lbl-phone').textContent      = ES.phone;
+document.getElementById('lbl-loc').textContent        = ES.loc;
+document.getElementById('loc-text').textContent       = ES.locDetecting;
+document.getElementById('lbl-btn').textContent        = ES.btnEmp;
+document.getElementById('lbl-worker-q').textContent   = ES.workerQ;
+document.getElementById('lbl-worker-link').textContent = ES.workerLink;
+document.getElementById('lbl-lang').textContent       = ES.lang;
+
+let currentRole = 'employer';
+let detectedLocation = '';
+
+function setRole(role) {
+  currentRole = role;
+  document.getElementById('tab-emp').classList.toggle('active', role === 'employer');
+  document.getElementById('tab-wrk').classList.toggle('active', role === 'worker');
+  document.getElementById('employer-only').style.display = role === 'employer' ? '' : 'none';
+  document.getElementById('lbl-btn').textContent = role === 'employer' ? ES.btnEmp : ES.btnWrk;
+}
+
+// Auto-detect location
+(function detectLoc() {
+  const bar = document.getElementById('loc-bar');
+  const txt = document.getElementById('loc-text');
+  if (!navigator.geolocation) {
+    bar.className = 'loc-bar error'; txt.textContent = 'Location nahi mili'; return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const d = await r.json();
+      const city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || '';
+      detectedLocation = [city, d.address?.state].filter(Boolean).join(', ');
+      bar.className = 'loc-bar';
+      txt.textContent = ES.locDone + detectedLocation;
+    } catch {
+      bar.className = 'loc-bar error'; txt.textContent = ES.locErr;
+    }
+  }, () => { bar.className = 'loc-bar error'; txt.textContent = ES.locErr; },
+  { timeout: 8000 });
+})();
+
+async function doLogin() {
+  const phone = document.getElementById('inp-phone').value.trim().replace(/\s/g, '');
+  const name  = document.getElementById('inp-name').value.trim();
+  const company = document.getElementById('inp-company').value.trim();
+
+  if (!phone || phone.length < 10) {
+    KM.toast(ES.phoneErr, 'error'); return;
+  }
+
+  const fullPhone = phone.startsWith('91') ? phone : '91' + phone;
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  document.getElementById('lbl-btn').textContent = ES.loading;
+
+  const endpoint = currentRole === 'employer' ? '/api/auth/employer-login' : '/api/auth/login';
+  const body = { phone: fullPhone, name, location: detectedLocation };
+  if (currentRole === 'employer' && company) body.company = company;
+
+  const r = await KM.api('POST', endpoint, body);
+
+  if (r.success) {
+    KM.setPhone(r.data.phone);
+    if (name) localStorage.setItem('km_name', name);
+    if (currentRole === 'employer') {
+      localStorage.setItem('km_emp_phone', r.data.phone);
+      localStorage.setItem('km_emp_name', name || r.data.name || '');
+      localStorage.setItem('km_emp_company', company);
+      window.location.href = '/employer?phone=' + encodeURIComponent(r.data.phone);
+    } else {
+      window.location.href = '/home';
+    }
+  } else {
+    KM.toast(r.message || ES.loginErr, 'error');
+    btn.disabled = false;
+    document.getElementById('lbl-btn').textContent = currentRole === 'employer' ? ES.btnEmp : ES.btnWrk;
+  }
+}
+
+// Pre-fill returning employer
+const savedEmp = localStorage.getItem('km_emp_phone');
+if (savedEmp) {
+  const num = savedEmp.startsWith('91') ? savedEmp.slice(2) : savedEmp;
+  document.getElementById('inp-phone').value = num;
+  document.getElementById('inp-name').value = localStorage.getItem('km_emp_name') || '';
+  document.getElementById('inp-company').value = localStorage.getItem('km_emp_company') || '';
+}
+
+document.getElementById('inp-phone').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Har insaan kama sakta hai{% endblock %}
+{% block head %}
+<style>
+.hero-wrap {
+  min-height: calc(100vh - 62px);
+  display: grid; grid-template-columns: 1fr 1fr;
+  align-items: center; gap: 0;
+  overflow: hidden; position: relative;
+}
+.hero-left {
+  padding: 60px 48px 60px 40px;
+  display: flex; flex-direction: column; gap: 28px;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--clay-pale); color: var(--clay);
+  padding: 6px 14px; border-radius: 100px;
+  font-size: .75rem; font-weight: 700; letter-spacing: .5px;
+  width: fit-content;
+}
+.hero-title { color: var(--soil); }
+.hero-title em { font-style: italic; color: var(--clay); }
+.hero-sub { font-size: 1rem; color: var(--muted); line-height: 1.7; max-width: 440px; }
+
+.phone-card {
+  background: var(--white); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg); padding: 32px 28px;
+  border: 1px solid var(--border); max-width: 460px;
+}
+.phone-card-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+.phone-card-sub   { font-size: .8rem; color: var(--muted); margin-bottom: 18px; }
+
+.mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+.mode-btn {
+  padding: 16px 14px; border-radius: 14px; border: 1.5px solid var(--border);
+  background: var(--white); cursor: pointer; text-align: left;
+  transition: all .18s var(--ease-back); display: flex; flex-direction: column; gap: 6px;
+}
+.mode-btn:hover {
+  border-color: var(--clay); background: var(--clay-pale);
+  transform: scale(1.02); box-shadow: var(--shadow-md);
+}
+.mode-btn .mode-icon  { font-size: 1.6rem; }
+.mode-btn .mode-title { font-weight: 700; font-size: .88rem; }
+.mode-btn .mode-desc  { font-size: .73rem; color: var(--muted); }
+
+.hero-right {
+  background: linear-gradient(160deg, var(--clay-pale) 0%, var(--saffron-pale) 100%);
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  padding: 60px 40px; flex-direction: column; gap: 24px;
+  min-height: calc(100vh - 62px);
+  position: relative; overflow: hidden;
+}
+.hero-right::before {
+  content: ''; position: absolute; width: 400px; height: 400px;
+  border-radius: 50%; background: rgba(193,68,14,.06); top: -100px; right: -100px;
+}
+.hero-right::after {
+  content: ''; position: absolute; width: 300px; height: 300px;
+  border-radius: 50%; background: rgba(245,166,35,.08); bottom: -80px; left: -60px;
+}
+.stat-float {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md); padding: 18px 22px;
+  border: 1px solid rgba(255,255,255,.8);
+  display: flex; align-items: center; gap: 14px;
+  z-index: 1; width: 100%; max-width: 320px;
+  transition: transform .3s var(--ease-back);
+}
+.stat-float:hover { transform: translateY(-4px); }
+.stat-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;
+}
+.stat-float-val { font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; }
+.stat-float-lbl { font-size: .73rem; color: var(--muted); }
+
+.how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.how-card {
+  background: var(--white); border-radius: var(--r-lg);
+  padding: 28px 22px; text-align: center;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, transform .2s var(--ease-out);
+}
+.how-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.how-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--clay-pale); color: var(--clay);
+  font-family: var(--font-display); font-weight: 900; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+}
+.how-card h4 { margin-bottom: 6px; }
+.how-card p  { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+
+.trust-bar {
+  background: var(--soil); border-radius: var(--r-xl);
+  padding: 40px; color: var(--sand);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 30px; flex-wrap: wrap; margin-top: 40px;
+}
+.trust-bar h2 { font-family: var(--font-display); color: var(--sand); }
+.trust-bar p  { color: rgba(247,240,230,.7); font-size: .88rem; }
+.trust-numbers { display: flex; gap: 32px; flex-wrap: wrap; }
+.trust-num-item .tn-val {
+  font-family: var(--font-display); font-size: 2rem; font-weight: 900; color: var(--saffron);
+}
+.trust-num-item .tn-lbl { font-size: .75rem; color: rgba(247,240,230,.65); }
+
+@keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+
+@media (max-width: 820px) {
+  .hero-wrap { grid-template-columns: 1fr; }
+  .hero-right { display: none; }
+  .hero-left { padding: 32px 20px; }
+  .how-grid { grid-template-columns: 1fr 1fr; }
+  .trust-bar { padding: 28px 20px; }
+}
+@media (max-width: 500px) {
+  .how-grid { grid-template-columns: 1fr; }
+  .mode-row { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- DEMO BANNER for judges -->
+<div id="demo-banner" style="background:linear-gradient(90deg,#1E6B45,#2A8F5C);color:#fff;text-align:center;padding:10px 20px;font-size:.82rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
+  <span>🏆 <strong>KaamMitr</strong> — AI-Powered Rural Employment Platform</span>
+  <span style="opacity:.6">·</span>
+  <span>🌍 3 Languages · ⚡ Instant Jobs · 🧠 AI Skill Assessment · 📱 IVR Support</span>
+  <button onclick="document.getElementById('demo-banner').style.display='none'" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.75rem">×</button>
+</div>
+
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero-left">
+    <div>
+      <div class="hero-eyebrow" id="hero-eyebrow">🌾 Rural Employment Platform</div>
+      <h1 class="hero-title" id="hero-title" style="margin-top:12px">
+        <em>Aaj</em> kaam karo,<br>Aaj paise pao
+      </h1>
+      <p class="hero-sub" id="hero-sub" style="margin-top:14px">
+        Skill ho ya na ho — hum aapko earning ka raasta dete hain.
+      </p>
+    </div>
+
+    <div class="phone-card fade-up">
+      <div class="phone-card-title" id="card-title">Shuru karein 🚀</div>
+
+      <div class="mode-row">
+        <button class="mode-btn" onclick="goMode('instant')">
+          <span class="mode-icon">⚡</span>
+          <span class="mode-title" id="m-instant-t">Instant Kaam</span>
+          <span class="mode-desc"  id="m-instant-d">Aaj kamao</span>
+        </button>
+        <button class="mode-btn" onclick="goMode('skilled')">
+          <span class="mode-icon">🧠</span>
+          <span class="mode-title" id="m-skill-t">Monthly Job</span>
+          <span class="mode-desc"  id="m-skill-d">Permanent kaam lo</span>
+        </button>
+      </div>
+
+      <div class="divider" style="margin:14px 0"><span id="divider-txt">ya</span></div>
+
+      <button class="btn btn-primary btn-full btn-lg" onclick="goChat()">
+        <span id="start-btn-txt">AI से बात करें</span>
+        <span>→</span>
+      </button>
+      <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:10px" id="note-txt">
+        ✦ Bilkul free · Koi form nahi · Sirf baat karo
+      </p>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="hero-right">
+    <div class="stat-float" style="animation:float1 4s ease-in-out infinite">
+      <div class="stat-icon" style="background:var(--forest-pale)">💰</div>
+      <div>
+        <div class="stat-float-val" id="live-jobs">12+</div>
+        <div class="stat-float-lbl" id="sf-jobs-lbl">Jobs Available Now</div>
+      </div>
+    </div>
+    <div class="stat-float" style="animation:float2 4s ease-in-out .8s infinite">
+      <div class="stat-icon" style="background:var(--clay-pale)">⚡</div>
+      <div>
+        <div class="stat-float-val">₹250+</div>
+        <div class="stat-float-lbl" id="sf-earn-lbl">Daily Earning Possible</div>
+      </div>
+    </div>
+    <div class="stat-float" style="animation:float1 4s ease-in-out 1.6s infinite">
+      <div class="stat-icon" style="background:var(--saffron-pale)">📞</div>
+      <div>
+        <div class="stat-float-val">IVR</div>
+        <div class="stat-float-lbl" id="sf-ivr-lbl">Call Karo, Baat Karo</div>
+      </div>
+    </div>
+    <div class="stat-float" style="animation:float2 4s ease-in-out 2.4s infinite">
+      <div class="stat-icon" style="background:#F3E8FF">⭐</div>
+      <div>
+        <div class="stat-float-val">Trust</div>
+        <div class="stat-float-lbl" id="sf-trust-lbl">Score System</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div style="background:var(--white);padding:60px 0;border-top:1px solid var(--border)">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:36px">
+      <h2 id="how-title">Kaise kaam karta hai?</h2>
+      <p style="color:var(--muted);margin-top:8px;font-size:.9rem" id="how-sub">Teen simple steps mein kaam shuru karo</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-card fade-up">
+        <div class="how-num">1</div>
+        <h4 id="how1-h">Number Dalein</h4>
+        <p  id="how1-p">Sirf apna mobile number — koi password, koi form, koi waiting</p>
+      </div>
+      <div class="how-card fade-up" style="transition-delay:.1s">
+        <div class="how-num">2</div>
+        <h4 id="how2-h">AI se Baat Karo</h4>
+        <p  id="how2-p">Hindi ya English mein bolein — AI samjhega aur sahi kaam dhundega</p>
+      </div>
+      <div class="how-card fade-up" style="transition-delay:.2s">
+        <div class="how-num">3</div>
+        <h4 id="how3-h">Kaam Karo, Kamao</h4>
+        <p  id="how3-p">Apply karein, kaam karein, proof upload karein aur trust score badhao</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRUST BAR -->
+<div class="container section">
+  <div class="trust-bar fade-up">
+    <div>
+      <h2 id="trust-h" style="margin-bottom:8px">Hum reject nahi karte</h2>
+      <p  id="trust-p">Skill ho ya na ho — hum har insaan ko earning ka raasta dete hain</p>
+    </div>
+    <div class="trust-numbers">
+      <div class="trust-num-item">
+        <div class="tn-val" id="tb-jobs">12+</div>
+        <div class="tn-lbl" id="tn-jobs-lbl">Open Jobs</div>
+      </div>
+      <div class="trust-num-item">
+        <div class="tn-val">0</div>
+        <div class="tn-lbl" id="tn-skill-lbl">Skill Required</div>
+      </div>
+      <div class="trust-num-item">
+        <div class="tn-val">3</div>
+        <div class="tn-lbl" id="tn-lang-lbl">Languages</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STRINGS = {
+  hi: {
+    eyebrow:   '🌾 Rural Employment Platform',
+    heroTitle: '<em>Aaj</em> kaam karo,<br>Aaj paise pao',
+    heroSub:   'Skill ho ya na ho — hum aapko earning ka raasta dete hain. Call karo, chat karo, ya seedha kaam dhoondo.',
+    cardTitle: 'Shuru karein 🚀',
+    mInstT: 'Instant Kaam',    mInstD: 'Aaj kamao',
+    mSkillT: 'Monthly Job',    mSkillD: 'Permanent kaam lo',
+    divider: 'ya',
+    startBtn: 'AI से बात करें',
+    noteTxt:  '✦ Bilkul free · Koi form nahi · Sirf baat karo',
+    howTitle: 'Kaise kaam karta hai?',
+    howSub:   'Teen simple steps mein kaam shuru karo',
+    how1h: 'Login Karein',     how1p: 'Sirf naam aur mobile number — koi password nahi, koi form nahi',
+    how2h: 'AI se Baat Karo',  how2p: 'Hindi ya English mein bolein — AI samjhega aur sahi kaam dhundega',
+    how3h: 'Kaam Karo, Kamao', how3p: 'Apply karein, kaam karein, proof upload karein aur trust score badhao',
+    trustH: 'Hum reject nahi karte',
+    trustP: 'Skill ho ya na ho — hum har insaan ko earning ka raasta dete hain',
+    tnJobs: 'Open Jobs', tnSkill: 'Skill Required', tnLang: 'Languages',
+    sfJobs: 'Jobs Available Now', sfEarn: 'Daily Earning Possible',
+    sfIvr:  'Call Karo, Baat Karo', sfTrust: 'Score System'
+  },
+  en: {
+    eyebrow:   '🌾 Rural Employment Platform',
+    heroTitle: '<em>Work today</em>,<br>Earn today',
+    heroSub:   'Skill or no skill — we find you a way to earn. Call, chat, or browse jobs directly.',
+    cardTitle: 'Get Started 🚀',
+    mInstT: 'Instant Work',    mInstD: 'Earn today',
+    mSkillT: 'Monthly Job',    mSkillD: 'Permanent work',
+    divider: 'or',
+    startBtn: 'Chat with AI',
+    noteTxt:  '✦ Completely free · No forms · Just talk',
+    howTitle: 'How does it work?',
+    howSub:   'Start working in three simple steps',
+    how1h: 'Login',            how1p: 'Just your name and mobile number — no password, no form',
+    how2h: 'Talk to AI',       how2p: 'Speak in Hindi or English — AI understands and finds the right job',
+    how3h: 'Work & Earn',      how3p: 'Apply, work, upload proof and build your trust score',
+    trustH: 'We never reject anyone',
+    trustP: 'Skill or no skill — we find every person a way to earn',
+    tnJobs: 'Open Jobs', tnSkill: 'Skill Required', tnLang: 'Languages',
+    sfJobs: 'Jobs Available Now', sfEarn: 'Daily Earning Possible',
+    sfIvr:  'Call, Talk to AI', sfTrust: 'Trust Score'
+  },
+  te: {
+    eyebrow:   '🌾 గ్రామీణ ఉపాధి వేదిక',
+    heroTitle: '<em>ఈరోజు</em> పని చేయండి,<br>ఈరోజే సంపాదించండి',
+    heroSub:   'నైపుణ్యం ఉన్నా లేకున్నా — మేము మీకు సంపాదన మార్గం చూపిస్తాం.',
+    cardTitle: 'ప్రారంభించండి 🚀',
+    mInstT: 'తక్షణ పని',       mInstD: 'ఈరోజే సంపాదించండి',
+    mSkillT: 'నెలవారీ ఉద్యోగం', mSkillD: 'శాశ్వత పని పొందండి',
+    divider: 'లేదా',
+    startBtn: 'AI తో మాట్లాడండి',
+    noteTxt:  '✦ పూర్తిగా ఉచితం · ఫారమ్ లేదు · మాట్లాడండి',
+    howTitle: 'ఇది ఎలా పని చేస్తుంది?',
+    howSub:   'మూడు సులభమైన దశల్లో పని ప్రారంభించండి',
+    how1h: 'లాగిన్ చేయండి',    how1p: 'పేరు మరియు మొబైల్ నంబర్ మాత్రమే — పాస్వర్డ్ లేదు',
+    how2h: 'AI తో మాట్లాడండి',  how2p: 'తెలుగు లేదా హిందీలో మాట్లాడండి — AI అర్థం చేసుకుంటుంది',
+    how3h: 'పని చేయండి, సంపాదించండి', how3p: 'దరఖాస్తు చేయండి, పని చేయండి, ట్రస్ట్ స్కోర్ పెంచుకోండి',
+    trustH: 'మేము ఎవరినీ తిరస్కరించం',
+    trustP: 'నైపుణ్యం ఉన్నా లేకున్నా — మేము ప్రతి వ్యక్తికి సంపాదన మార్గం చూపిస్తాం',
+    tnJobs: 'తెరిచిన ఉద్యోగాలు', tnSkill: 'నైపుణ్యం అవసరం', tnLang: 'భాషలు',
+    sfJobs: 'ఇప్పుడు అందుబాటులో ఉన్న ఉద్యోగాలు', sfEarn: 'రోజువారీ సంపాదన సాధ్యం',
+    sfIvr:  'కాల్ చేయండి, మాట్లాడండి', sfTrust: 'స్కోర్ సిస్టమ్'
+  }
+};
+
+const curLang = KM.getLang() || 'hi';
+const S = STRINGS[curLang] || STRINGS.hi;
+
+function set(id, val, isHTML) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (isHTML) el.innerHTML = val; else el.textContent = val;
+}
+
+function applyLang() {
+  set('hero-eyebrow', S.eyebrow);
+  set('hero-title',   S.heroTitle, true);
+  set('hero-sub',     S.heroSub);
+  set('card-title',   S.cardTitle);
+  set('m-instant-t',  S.mInstT);
+  set('m-instant-d',  S.mInstD);
+  set('m-skill-t',    S.mSkillT);
+  set('m-skill-d',    S.mSkillD);
+  set('divider-txt',  S.divider);
+  set('start-btn-txt',S.startBtn);
+  set('note-txt',     S.noteTxt);
+  set('how-title',    S.howTitle);
+  set('how-sub',      S.howSub);
+  set('how1-h', S.how1h); set('how1-p', S.how1p);
+  set('how2-h', S.how2h); set('how2-p', S.how2p);
+  set('how3-h', S.how3h); set('how3-p', S.how3p);
+  set('trust-h',      S.trustH);
+  set('trust-p',      S.trustP);
+  set('tn-jobs-lbl',  S.tnJobs);
+  set('tn-skill-lbl', S.tnSkill);
+  set('tn-lang-lbl',  S.tnLang);
+  set('sf-jobs-lbl',  S.sfJobs);
+  set('sf-earn-lbl',  S.sfEarn);
+  set('sf-ivr-lbl',   S.sfIvr);
+  set('sf-trust-lbl', S.sfTrust);
+}
+
+applyLang();
+
+// Use saved phone from login — no phone input on home page
+function goChat() {
+  const p = KM.getPhone();
+  if (!p) { window.location.href = '/login'; return; }
+  window.location.href = '/chat?phone=' + p;
+}
+function goMode(m) {
+  const p = KM.getPhone();
+  if (!p) { window.location.href = '/login'; return; }
+  window.location.href = '/chat?phone=' + p + '&mode=' + m;
+}
+
+// Live stats
+fetch('/api/health').then(r => r.json()).then(d => {
+  if (d.data?.jobs) {
+    set('live-jobs', d.data.jobs + '+');
+    set('tb-jobs',   d.data.jobs + '+');
+  }
+}).catch(() => {});
+</script>
+{% endblock %}

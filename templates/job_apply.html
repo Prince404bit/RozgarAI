@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}Apply — {{ job.title }}{% endblock %}
+{% block head %}
+<style>
+.apply-hero {
+  background: linear-gradient(120deg, var(--clay) 0%, var(--saffron) 100%);
+  padding: 32px 0 24px; color: #fff; margin-bottom: -20px;
+}
+.apply-hero h1 { font-family: var(--font-display); color: #fff; font-size: 1.4rem; }
+.apply-hero p  { opacity: .85; font-size: .88rem; margin-top: 6px; }
+
+.job-meta-strip {
+  display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px;
+}
+.jm-chip {
+  background: rgba(255,255,255,.2); border-radius: 100px;
+  padding: 5px 14px; font-size: .78rem; font-weight: 600;
+}
+
+.qa-card {
+  background: var(--white); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: 28px 24px; margin-bottom: 20px;
+}
+.qa-num {
+  font-size: .72rem; font-weight: 700; color: var(--clay);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px;
+}
+.qa-question {
+  font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.5;
+}
+.qa-options { display: flex; flex-direction: column; gap: 10px; }
+.qa-opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-radius: 12px;
+  border: 1.5px solid var(--border); cursor: pointer;
+  transition: all .15s; font-size: .9rem; color: var(--text);
+  background: var(--white);
+}
+.qa-opt:hover { border-color: var(--clay); background: #FFF5F0; }
+.qa-opt.selected { border-color: var(--clay); background: #FFF5F0; font-weight: 600; }
+.qa-opt input[type=radio] { accent-color: var(--clay); width: 18px; height: 18px; flex-shrink: 0; }
+
+.progress-bar-wrap {
+  background: var(--border); border-radius: 100px; height: 6px; margin-bottom: 28px;
+}
+.progress-bar-fill {
+  background: var(--clay); border-radius: 100px; height: 6px;
+  transition: width .4s ease;
+}
+
+.btn-apply-submit {
+  width: 100%; padding: 16px; font-size: 1rem; font-weight: 700;
+  border-radius: 14px; margin-top: 8px;
+}
+
+.loading-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 999;
+  align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+.loading-overlay.show { display: flex; }
+.spinner {
+  width: 48px; height: 48px; border: 4px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-overlay p { color: #fff; font-weight: 600; font-size: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="apply-hero">
+  <div class="container">
+    <h1>📝 <span id="apply-hero-title">Apply</span>: {{ job.title }}</h1>
+    <p id="apply-hero-sub">Kuch sawaal jawab do — phir apply karo</p>
+    <div class="job-meta-strip">
+      <span class="jm-chip">💰 ₹{{ job.salary|int }}/{{ job.salary_unit }}</span>
+      <span class="jm-chip">📍 {{ job.location }}</span>
+      <span class="jm-chip">⏱ {{ job.duration }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="container section" style="max-width:640px">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+  </div>
+
+  <div id="qa-container">
+    <div style="text-align:center;padding:60px 0;color:var(--muted)">
+      <div class="spinner" style="margin:0 auto 16px;border-top-color:var(--clay);border-color:var(--border)"></div>
+      <p id="loading-qs-txt">Sawaal load ho rahe hain...</p>
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-apply-submit" id="submit-btn" style="display:none" onclick="submitApplication()">
+    <span id="submit-btn-txt">✅ Apply Karo</span>
+  </button>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <p id="submitting-txt">Application submit ho rahi hai...</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const _al = KM.getLang() || 'hi';
+const APPLY_L = {
+  hi: {
+    heroTitle: 'Apply Karein', heroSub: 'Kuch sawaal jawab do — phir apply karo',
+    loadingQs: 'Sawaal load ho rahe hain...', submitBtn: '✅ Apply Karo',
+    submitting: 'Application submit ho rahi hai...',
+    qLabel: 'Sawaal', loginErr: 'Pehle login karein',
+    answerAll: 'Sabhi sawaalon ke jawab do',
+    networkErr: 'Network error. Dobara try karein.',
+    applyErr: 'Apply nahi ho saka'
+  },
+  en: {
+    heroTitle: 'Apply', heroSub: 'Answer a few questions — then apply',
+    loadingQs: 'Loading questions...', submitBtn: '✅ Apply Now',
+    submitting: 'Submitting application...',
+    qLabel: 'Question', loginErr: 'Please login first',
+    answerAll: 'Please answer all questions',
+    networkErr: 'Network error. Please try again.',
+    applyErr: 'Could not apply'
+  },
+  te: {
+    heroTitle: 'దరఖాస్తు చేయండి', heroSub: 'కొన్ని ప్రశ్నలకు జవాబు ఇవ్వండి — తర్వాత దరఖాస్తు చేయండి',
+    loadingQs: 'ప్రశ్నలు లోడ్ అవుతున్నాయి...', submitBtn: '✅ దరఖాస్తు చేయండి',
+    submitting: 'దరఖాస్తు సమర్పిస్తోంది...',
+    qLabel: 'ప్రశ్న', loginErr: 'ముందు లాగిన్ చేయండి',
+    answerAll: 'అన్ని ప్రశ్నలకు జవాబు ఇవ్వండి',
+    networkErr: 'నెట్వర్క్ లోపం. మళ్ళీ ప్రయత్నించండి.',
+    applyErr: 'దరఖాస్తు కాలేదు'
+  }
+};
+const AL = APPLY_L[_al] || APPLY_L.en;
+
+document.getElementById('apply-hero-title').textContent = AL.heroTitle;
+document.getElementById('apply-hero-sub').textContent   = AL.heroSub;
+document.getElementById('loading-qs-txt').textContent   = AL.loadingQs;
+document.getElementById('submit-btn-txt').textContent   = AL.submitBtn;
+document.getElementById('submitting-txt').textContent   = AL.submitting;
+
+const JOB_ID   = {{ job.id }};
+const JOB_DATA = {
+  title:    {{ job.title | tojson }},
+  salary:   {{ job.salary }},
+  unit:     {{ job.salary_unit | tojson }},
+  location: {{ job.location | tojson }},
+  duration: {{ job.duration | tojson }},
+};
+
+let questions = [];
+let answers   = {};
+
+async function loadQuestions() {
+  try {
+    const r = await KM.api('GET', `/api/jobs/${JOB_ID}/questions`);
+    questions = r.success && r.data ? r.data : fallbackQuestions();
+  } catch(e) {
+    questions = fallbackQuestions();
+  }
+  renderQuestions();
+}
+
+function fallbackQuestions() {
+  const fq = {
+    hi: [
+      { question: 'Kya aapne pehle aisa kaam kiya hai?', options: ['Haan, bahut baar', 'Haan, thoda', 'Nahi, par seekhna chahta hoon', 'Bilkul nahi'] },
+      { question: 'Aap kab se kaam shuru kar sakte hain?', options: ['Aaj se', 'Kal se', 'Is hafte mein', 'Agle hafte'] },
+      { question: 'Aap din mein kitne ghante kaam kar sakte hain?', options: ['8+ ghante', '6-8 ghante', '4-6 ghante', '4 ghante se kam'] },
+    ],
+    en: [
+      { question: 'Have you done this type of work before?', options: ['Yes, many times', 'Yes, a little', 'No, but willing to learn', 'No, never'] },
+      { question: 'When can you start?', options: ['Today', 'Tomorrow', 'This week', 'Next week'] },
+      { question: 'How many hours can you work per day?', options: ['8+ hours', '6-8 hours', '4-6 hours', 'Less than 4 hours'] },
+    ],
+    te: [
+      { question: 'మీరు ముందు ఇలాంటి పని చేశారా?', options: ['అవును, చాలాసార్లు', 'అవును, కొంచెం', 'లేదు, కానీ నేర్చుకోవాలని ఉంది', 'లేదు, ఎప్పుడూ లేదు'] },
+      { question: 'మీరు ఎప్పటి నుండి పని ప్రారంభించగలరు?', options: ['ఈరోజే', 'రేపు', 'ఈ వారంలో', 'వచ్చే వారం'] },
+      { question: 'మీరు రోజుకు ఎన్ని గంటలు పని చేయగలరు?', options: ['8+ గంటలు', '6-8 గంటలు', '4-6 గంటలు', '4 గంటల కంటే తక్కువ'] },
+    ]
+  };
+  return fq[_al] || fq.en;
+}
+
+function renderQuestions() {
+  const container = document.getElementById('qa-container');
+  container.innerHTML = questions.map((q, i) => `
+    <div class="qa-card fade-up" id="qcard-${i}">
+      <div class="qa-num">${AL.qLabel} ${i + 1} / ${questions.length}</div>
+      <div class="qa-question">${KM.esc(q.question)}</div>
+      <div class="qa-options">
+        ${q.options.map((opt, oi) => `
+          <label class="qa-opt" id="opt-${i}-${oi}" onclick="selectOpt(${i},${oi})">
+            <input type="radio" name="q${i}" value="${oi}" onchange="selectOpt(${i},${oi})">
+            ${KM.esc(opt)}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+  KM.initFadeUp && KM.initFadeUp();
+  updateProgress();
+  document.getElementById('submit-btn').style.display = '';
+}
+
+function selectOpt(qIdx, optIdx) {
+  // Deselect all options for this question
+  questions[qIdx].options.forEach((_, oi) => {
+    document.getElementById(`opt-${qIdx}-${oi}`)?.classList.remove('selected');
+  });
+  document.getElementById(`opt-${qIdx}-${optIdx}`)?.classList.add('selected');
+  document.querySelector(`#qcard-${qIdx} input[value="${optIdx}"]`).checked = true;
+  answers[qIdx] = { question: questions[qIdx].question, answer: questions[qIdx].options[optIdx] };
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = Object.keys(answers).length;
+  const pct = questions.length ? Math.round((answered / questions.length) * 100) : 0;
+  document.getElementById('prog-bar').style.width = pct + '%';
+}
+
+async function submitApplication() {
+  const phone = KM.getPhone();
+  if (!phone) {
+    KM.toast(AL.loginErr, 'error');
+    window.location.href = '/login';
+    return;
+  }
+
+  const unanswered = questions.filter((_, i) => answers[i] === undefined);
+  if (unanswered.length > 0) {
+    KM.toast(AL.answerAll, 'error');
+    return;
+  }
+
+  document.getElementById('loading-overlay').classList.add('show');
+
+  try {
+    const r = await KM.api('POST', `/api/jobs/${JOB_ID}/apply`, { phone });
+    if (r.success || r.message?.toLowerCase().includes('already')) {
+      sessionStorage.setItem('km_confirm', JSON.stringify({
+        job: JOB_DATA,
+        answers: Object.values(answers),
+        application_id: r.data?.work_history_id || r.data?.id || null,
+      }));
+      window.location.href = '/job-confirm';
+    } else {
+      document.getElementById('loading-overlay').classList.remove('show');
+      KM.toast(r.message || AL.applyErr, 'error');
+    }
+  } catch(e) {
+    document.getElementById('loading-overlay').classList.remove('show');
+    KM.toast(AL.networkErr, 'error');
+  }
+}
+
+loadQuestions();
+</script>
+{% endblock %}

@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% block title %}KaamMitr — Dashboard{% endblock %}
+{% block head %}
+<style>
+.dash-wrap { max-width: 960px; margin: 0 auto; padding: 32px 18px 60px; }
+
+/* Greeting banner */
+.dash-greeting {
+  background: linear-gradient(130deg, var(--clay) 0%, var(--saffron) 100%);
+  border-radius: var(--r-xl); padding: 32px 32px; color: #fff;
+  margin-bottom: 28px; position: relative; overflow: hidden;
+}
+.dash-greeting::after {
+  content: '🌾'; position: absolute; right: 28px; top: 50%;
+  transform: translateY(-50%); font-size: 5rem; opacity: .12;
+}
+.dash-greeting h2 { font-family: var(--font-display); color: #fff; margin-bottom: 6px; }
+.dash-greeting p  { opacity: .85; font-size: .9rem; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 28px; }
+.kpi {
+  background: var(--white); border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
+  padding: 20px 18px; border: 1px solid var(--border);
+  transition: box-shadow .2s, transform .2s var(--ease-out);
+}
+.kpi:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.kpi-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.kpi-val  { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--clay); }
+.kpi-lbl  { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* Mode section */
+.mode-section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--soil); margin-bottom: 4px;
+}
+.mode-section-sub { font-size: .82rem; color: var(--muted); margin-bottom: 16px; }
+
+/* Two-col panels */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel {
+  background: var(--white); border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
+  padding: 24px; border: 1px solid var(--border);
+}
+.panel-title {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+
+.recent-job {
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.recent-job:last-child { border-bottom: none; }
+.rj-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rj-info { flex: 1; }
+.rj-title  { font-weight: 600; font-size: .84rem; }
+.rj-meta   { font-size: .71rem; color: var(--muted); }
+.rj-salary { font-family: var(--font-display); font-weight: 700; color: var(--forest); font-size: .88rem; }
+
+.bar-chart { display: flex; flex-direction: column; gap: 12px; }
+.bar-row   { display: flex; align-items: center; gap: 12px; }
+.bar-label { font-size: .75rem; color: var(--muted); width: 80px; flex-shrink: 0; text-align: right; }
+.bar-track { flex: 1; height: 10px; background: var(--sand-dark); border-radius: 100px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 100px; background: linear-gradient(90deg,var(--clay),var(--saffron)); transition: width .8s var(--ease-out); }
+.bar-val   { font-size: .73rem; font-weight: 700; color: var(--clay); width: 36px; text-align: right; }
+
+@media(max-width:700px) {
+  .kpi-row { grid-template-columns: repeat(2,1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+@media(max-width:400px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-wrap">
+
+  <!-- Greeting -->
+  <div class="dash-greeting fade-up">
+    <h2 id="greet-txt">Namaste! 🙏</h2>
+    <p id="greet-sub">Aaj kaun sa kaam karein?</p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi fade-up">
+      <div class="kpi-icon">💼</div>
+      <div class="kpi-val" id="k-jobs">—</div>
+      <div class="kpi-lbl" id="k-jobs-lbl">Open Jobs</div>
+    </div>
+    <div class="kpi fade-up" style="transition-delay:.05s">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-val" id="k-users">—</div>
+      <div class="kpi-lbl" id="k-users-lbl">Workers</div>
+    </div>
+    <div class="kpi fade-up" style="transition-delay:.1s">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-val" id="k-instant">—</div>
+      <div class="kpi-lbl" id="k-instant-lbl">Instant Jobs</div>
+    </div>
+    <div class="kpi fade-up" style="transition-delay:.15s">
+      <div class="kpi-icon">🧠</div>
+      <div class="kpi-val" id="k-skilled">—</div>
+      <div class="kpi-lbl" id="k-skilled-lbl">Skilled Jobs</div>
+    </div>
+  </div>
+
+  <!-- Mode selector -->
+  <div class="fade-up" style="transition-delay:.1s">
+    <div class="mode-section-title" id="mode-title">Kaam ka mode chunein</div>
+    <div class="mode-section-sub" id="mode-sub">Voice ya text — dono se kaam karo</div>
+
+    <div class="mode-cards">
+      <!-- Instant Work -->
+      <div class="mode-card instant fade-up" onclick="goMode('instant')" style="transition-delay:.15s">
+        <span class="mc-icon">⚡</span>
+        <div class="mc-title" id="mc-instant-t">Instant Kaam</div>
+        <div class="mc-desc" id="mc-instant-d">1–6 ghante ka kaam · Aaj hi paise</div>
+        <div class="mc-badge">⚡ Turant Shuru</div>
+      </div>
+
+      <!-- Skill Job -->
+      <div class="mode-card skilled fade-up" onclick="goMode('skilled')" style="transition-delay:.2s">
+        <span class="mc-icon">🧠</span>
+        <div class="mc-title" id="mc-skill-t">Skill Job</div>
+        <div class="mc-desc" id="mc-skill-d">Monthly · Long-term · Skill ke hisab se</div>
+        <div class="mc-badge">🧠 AI Recommend</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data panels -->
+  <div class="two-col" style="margin-top:24px">
+    <div class="panel fade-up">
+      <div class="panel-title">💼 <span id="panel-latest-lbl">Latest Jobs</span></div>
+      <div id="latest-jobs">
+        <div class="skel" style="height:12px;width:80%;margin-bottom:10px"></div>
+        <div class="skel" style="height:12px;width:65%;margin-bottom:10px"></div>
+        <div class="skel" style="height:12px;width:70%"></div>
+      </div>
+    </div>
+    <div class="panel fade-up" style="transition-delay:.1s">
+      <div class="panel-title">📊 <span id="panel-skills-lbl">Skills in Demand</span></div>
+      <div class="bar-chart" id="skill-chart">
+        <div class="skel" style="height:10px;width:90%;margin-bottom:8px"></div>
+        <div class="skel" style="height:10px;width:75%;margin-bottom:8px"></div>
+        <div class="skel" style="height:10px;width:60%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA buttons -->
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:24px">
+    <a href="/chat" class="btn btn-primary btn-lg" id="chat-link">
+      💬 <span id="cta-chat">AI Chat</span>
+    </a>
+    <a href="/jobs" class="btn btn-outline btn-lg">
+      🔎 <span id="cta-browse">Browse Jobs</span>
+    </a>
+  </div>
+</div>
+
+<!-- Employer section -->
+<div class="dash-wrap" id="employer-section" style="display:none;padding-top:0">
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-title">🏢 <span id="panel-emp-lbl">Your Posted Jobs</span></div>
+    <div id="employer-jobs-list"><p style="color:var(--muted);font-size:.88rem">Loading...</p></div>
+  </div>
+</div>
+
+<!-- Job Completion Modal -->
+<div id="complete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:var(--r-xl);padding:32px;width:90%;max-width:400px;box-shadow:var(--shadow-lg)">
+    <h3 style="margin-bottom:16px">✅ Mark Job Complete</h3>
+    <input type="hidden" id="complete-wh-id">
+    <div style="margin-bottom:14px">
+      <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:6px">Rating (1–5 ⭐)</label>
+      <div style="display:flex;gap:8px" id="star-row">
+        {% for i in range(1,6) %}
+        <button onclick="setRating({{i}})" data-star="{{i}}"
+          style="font-size:1.5rem;background:none;border:none;cursor:pointer;opacity:.4">⭐</button>
+        {% endfor %}
+      </div>
+      <input type="hidden" id="complete-rating" value="5">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:6px">Proof (Image URL, optional)</label>
+      <input class="input" id="complete-proof" placeholder="https://...">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitComplete()">Submit</button>
+      <button class="btn btn-outline" onclick="document.getElementById('complete-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Language strings ──────────────────────────────────────────────
+const DASH_L = {
+  hi: {
+    greetSub: 'Aaj kaun sa kaam karein?',
+    modeTitle: 'Kaam ka mode chunein',
+    modeSub: 'Voice ya text — dono se kaam karo',
+    instantT: 'Instant Kaam', instantD: '1–6 ghante ka kaam · Aaj hi paise',
+    skillT: 'Skill Job', skillD: 'Monthly · Long-term · Skill ke hisab se',
+    kJobs:'Open Jobs', kUsers:'Workers', kInstant:'Instant Jobs', kSkilled:'Skilled Jobs',
+    latestLbl:'Latest Jobs', skillsLbl:'Skills in Demand',
+    empLbl:'Aapki Posted Jobs',
+    ctaChat:'AI Chat', ctaBrowse:'Jobs Dekhein'
+  },
+  en: {
+    greetSub: 'What work would you like today?',
+    modeTitle: 'Choose your work mode',
+    modeSub: 'Voice or text — work your way',
+    instantT: 'Instant Work', instantD: '1–6 hour jobs · Earn today',
+    skillT: 'Skill Job', skillD: 'Monthly · Long-term · Skill-matched',
+    kJobs:'Open Jobs', kUsers:'Workers', kInstant:'Instant Jobs', kSkilled:'Skilled Jobs',
+    latestLbl:'Latest Jobs', skillsLbl:'Skills in Demand',
+    empLbl:'Your Posted Jobs',
+    ctaChat:'AI Chat', ctaBrowse:'Browse Jobs'
+  },
+  te: {
+    greetSub: 'ఈరోజు ఏ పని చేయాలనుకుంటున్నారు?',
+    modeTitle: 'పని మోడ్ ఎంచుకోండి',
+    modeSub: 'వాయిస్ లేదా టెక్స్ట్ — మీ ఇష్టం',
+    instantT: 'తక్షణ పని', instantD: '1–6 గంటల పని · ఈరోజే సంపాదించండి',
+    skillT: 'నైపుణ్య ఉద్యోగం', skillD: 'నెలవారీ · దీర్ఘకాలిక · నైపుణ్యం ఆధారంగా',
+    kJobs:'తెరిచిన ఉద్యోగాలు', kUsers:'కార్మికులు', kInstant:'తక్షణ ఉద్యోగాలు', kSkilled:'నైపుణ్య ఉద్యోగాలు',
+    latestLbl:'తాజా ఉద్యోగాలు', skillsLbl:'డిమాండ్‌లో నైపుణ్యాలు',
+    empLbl:'మీరు పోస్ట్ చేసిన ఉద్యోగాలు',
+    ctaChat:'AI చాట్', ctaBrowse:'ఉద్యోగాలు చూడండి'
+  }
+};
+
+const lang = KM.getLang() || 'hi';
+const s = DASH_L[lang] || DASH_L.en;
+
+function applyLang() {
+  document.getElementById('greet-sub').textContent      = s.greetSub;
+  document.getElementById('mode-title').textContent     = s.modeTitle;
+  document.getElementById('mode-sub').textContent       = s.modeSub;
+  document.getElementById('mc-instant-t').textContent   = s.instantT;
+  document.getElementById('mc-instant-d').textContent   = s.instantD;
+  document.getElementById('mc-skill-t').textContent     = s.skillT;
+  document.getElementById('mc-skill-d').textContent     = s.skillD;
+  document.getElementById('k-jobs-lbl').textContent     = s.kJobs;
+  document.getElementById('k-users-lbl').textContent    = s.kUsers;
+  document.getElementById('k-instant-lbl').textContent  = s.kInstant;
+  document.getElementById('k-skilled-lbl').textContent  = s.kSkilled;
+  document.getElementById('panel-latest-lbl').textContent = s.latestLbl;
+  document.getElementById('panel-skills-lbl').textContent = s.skillsLbl;
+  document.getElementById('panel-emp-lbl').textContent  = s.empLbl;
+  document.getElementById('cta-chat').textContent       = s.ctaChat;
+  document.getElementById('cta-browse').textContent     = s.ctaBrowse;
+}
+applyLang();
+
+function goMode(mode) {
+  const phone = KM.getPhone();
+  if (!phone) { window.location.href = '/login'; return; }
+  window.location.href = `/chat?phone=${phone}&mode=${mode}`;
+}
+
+function setRating(n) {
+  document.getElementById('complete-rating').value = n;
+  document.querySelectorAll('#star-row button').forEach(b =>
+    b.style.opacity = b.dataset.star <= n ? '1' : '.4');
+}
+function openComplete(whId) {
+  document.getElementById('complete-wh-id').value = whId;
+  setRating(5);
+  document.getElementById('complete-proof').value = '';
+  document.getElementById('complete-modal').style.display = 'flex';
+}
+async function submitComplete() {
+  const whId   = document.getElementById('complete-wh-id').value;
+  const rating = parseFloat(document.getElementById('complete-rating').value);
+  const proof  = document.getElementById('complete-proof').value.trim();
+  const r = await KM.api('POST', `/api/jobs/0/complete`, { work_history_id: whId, rating, proof_url: proof });
+  document.getElementById('complete-modal').style.display = 'none';
+  KM.toast(r.success ? `✅ Job complete! Trust: ${r.data?.trust_score||''}` : (r.message||'Error'),
+           r.success ? 'success' : 'error');
+  if (r.success) setTimeout(() => location.reload(), 1500);
+}
+
+// ── Load data ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const phone = KM.getPhone();
+  if (phone) {
+    document.getElementById('chat-link').href = '/chat?phone=' + phone;
+    const r = await KM.api('GET', '/api/user/profile?phone=' + phone);
+    if (r.success && r.data) {
+      const u = r.data;
+      document.getElementById('greet-txt').textContent =
+        (lang === 'hi' ? 'Namaste' : lang === 'te' ? 'నమస్కారం' : 'Hello') +
+        (u.name ? ' ' + u.name : '') + '! 🙏';
+      if (u.skill) {
+        const skillSubTxt = { hi: `🛠 ${KM.cap(u.skill)} · ${KM.cap(u.skill_level||'beginner')} · ⭐${Math.round(u.trust_score||50)}`, en: `🛠 ${KM.cap(u.skill)} · ${KM.cap(u.skill_level||'beginner')} · ⭐${Math.round(u.trust_score||50)}`, te: `🛠 ${KM.cap(u.skill)} · ${KM.cap(u.skill_level||'beginner')} · ⭐${Math.round(u.trust_score||50)}` };
+        document.getElementById('greet-sub').textContent = skillSubTxt[lang] || skillSubTxt.en;
+      }
+    }
+  }
+
+  const [hr, jr] = await Promise.all([
+    KM.api('GET', '/api/health'),
+    KM.api('GET', '/api/jobs')
+  ]);
+
+  if (hr.success) {
+    document.getElementById('k-jobs').textContent  = hr.data.jobs  || 0;
+    document.getElementById('k-users').textContent = hr.data.users || 0;
+  }
+
+  if (jr.success && jr.data) {
+    const jobs    = jr.data;
+    const instant = jobs.filter(j => j.job_type === 'instant').length;
+    const skilled = jobs.filter(j => j.job_type === 'skilled').length;
+    document.getElementById('k-instant').textContent = instant;
+    document.getElementById('k-skilled').textContent = skilled;
+
+    // Latest 5 jobs
+    document.getElementById('latest-jobs').innerHTML = jobs.slice(0,5).map(j =>
+      `<div class="recent-job">
+        <div class="rj-dot" style="background:${j.job_type==='skilled'?'var(--forest)':'var(--clay)'}"></div>
+        <div class="rj-info">
+          <div class="rj-title">${KM.esc(j.title)}</div>
+          <div class="rj-meta">📍${KM.esc(j.location||'Nearby')} · ⏱${KM.esc(j.duration||'')}</div>
+        </div>
+        <div class="rj-salary">${KM.currency(j.salary)}</div>
+      </div>`
+    ).join('');
+
+    // Skill demand chart
+    const skillCounts = {};
+    jobs.forEach(j => {
+      if (j.skill_required) skillCounts[j.skill_required] = (skillCounts[j.skill_required]||0)+1;
+    });
+    skillCounts['instant/general'] = instant;
+    const sorted = Object.entries(skillCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+    const max = sorted[0]?.[1] || 1;
+    document.getElementById('skill-chart').innerHTML = sorted.map(([k,v]) =>
+      `<div class="bar-row">
+        <span class="bar-label">${KM.cap(k)}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(v/max*100).toFixed(0)}%"></div></div>
+        <span class="bar-val">${v}</span>
+      </div>`
+    ).join('');
+  }
+
+  KM.initFadeUp();
+
+  // Employer section
+  if (phone) {
+    const er = await KM.api('GET', '/api/user/jobs-posted?phone=' + phone);
+    if (er.success && er.data && er.data.length) {
+      document.getElementById('employer-section').style.display = 'block';
+      document.getElementById('employer-jobs-list').innerHTML = er.data.map(j => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600">${KM.esc(j.title)}</div>
+            <div style="font-size:.78rem;color:var(--muted)">${j.applicants||0} applicant(s) · ${KM.currency(j.salary)}</div>
+          </div>
+          <span style="font-size:.75rem;padding:4px 10px;border-radius:100px;background:${j.status==='open'?'#e6f4ea':'#fce8e6'};color:${j.status==='open'?'var(--forest)':'var(--clay)'}">${j.status}</span>
+        </div>`).join('');
+    }
+
+    // Applications
+    const ar = await KM.api('GET', '/api/user/applications?phone=' + phone);
+    if (ar.success && ar.data) {
+      const pending = ar.data.filter(a => a.status === 'applied');
+      if (pending.length) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-top:20px';
+        wrap.innerHTML = `<div class="panel"><div class="panel-title">📋 Your Applications</div>` +
+          pending.map(a => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div><div style="font-weight:600">${KM.esc(a.job_title)}</div>
+            <div style="font-size:.78rem;color:var(--muted)">${KM.currency(a.job_salary)} · ${KM.esc(a.job_location||'')}</div></div>
+            <button class="btn btn-outline" style="font-size:.78rem;padding:8px 14px" onclick="openComplete(${a.id})">✅ Mark Complete</button>
+          </div>`).join('') + `</div>`;
+        document.querySelector('.dash-wrap').appendChild(wrap);
+      }
+    }
+  }
+});
+</script>
+{% endblock %}
